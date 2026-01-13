@@ -1,98 +1,165 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { addHabit } from "@/db/habits";
+import { Picker } from "@react-native-picker/picker";
+import React, { useState } from "react";
+import {
+  Alert,
+  Keyboard,
+  Pressable,
+  Text,
+  TextInput,
+  View
+} from "react-native";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+type Habit = {
+  name: string;
+  type: "good" | "bad";
+};
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+type HabitLogs = Record<string, Record<string, boolean>>;
+// logs[habitId][dateKey] = true (success) | false (slip)
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+const STORAGE_KEY = "habit_logs_multi_v1";
+
+// ✅ Pre-created habits (edit this list)
+
+function dateKey(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
+function parseDateKey(k: string) {
+  const [y, m, d] = k.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function addDays(d: Date, n: number) {
+  const copy = new Date(d);
+  copy.setDate(copy.getDate() + n);
+  return copy;
+}
+
+function calcStreaksForHabit(logByDate: Record<string, boolean> | undefined) {
+  if (!logByDate || Object.keys(logByDate).length === 0) {
+    return { current: 0, best: 0 };
+  }
+
+  const keys = Object.keys(logByDate).sort(); // ascending YYYY-MM-DD
+
+  // Best streak across all time (consecutive TRUE days)
+  let best = 0;
+  let run = 0;
+  let prev: Date | null = null;
+
+  for (const k of keys) {
+    const success = logByDate[k];
+    const dt = parseDateKey(k);
+
+    if (success) {
+      if (!prev) run = 1;
+      else {
+        const expected = addDays(prev, 1).toDateString();
+        run = dt.toDateString() === expected ? run + 1 : 1;
+      }
+      best = Math.max(best, run);
+    } else {
+      run = 0;
+    }
+
+    prev = dt;
+  }
+
+  // Current streak ending today (consecutive TRUE backwards from today)
+  let current = 0;
+  let cursor = new Date();
+  while (true) {
+    const k = dateKey(cursor);
+    if (logByDate[k] === true) {
+      current += 1;
+      cursor = addDays(cursor, -1);
+    } else {
+      break;
+    }
+  }
+
+  return { current, best };
+}
+
+export default function App() {
+  const today = dateKey();
+  const [habit, setHabit] = useState<Habit | null>(null);
+
+  function submit() {
+    const trimmed = habit?.name.trim();
+    if (!trimmed) {
+      Alert.alert("Missing name", "Please enter a habit name.");
+      return;
+    }
+
+    addHabit(trimmed, habit?.type ?? "good");
+
+    Keyboard.dismiss();
+    setHabit({ name: "", type: "good" });
+    Alert.alert("Added", `Saved "${trimmed}" as a ${habit?.type} habit.`);
+  }
+
+
+  return (
+    <View style={{ flex: 1, padding: 16, backgroundColor: "#fff" }}>
+    <Text style={{ fontSize: 22, fontWeight: "700", color: "#000" }}>
+      Add a Habit
+    </Text>
+
+    <Text style={{ marginTop: 16, fontWeight: "600", color: "#000" }}>
+      Habit name
+    </Text>
+    <TextInput
+      value={habit?.name}
+      onChangeText={(text => setHabit(habit => ({ ...habit!, name: text })))}
+      placeholder="e.g., No doomscrolling"
+      placeholderTextColor="#666"
+      style={{
+        marginTop: 8,
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: 12,
+        color: "#000",
+      }}
+    />
+
+    <Text style={{ marginTop: 16, fontWeight: "600", color: "#000" }}>
+      Type
+    </Text>
+    <View
+      style={{
+        marginTop: 8,
+        borderWidth: 1,
+        borderRadius: 12,
+        overflow: "hidden",
+      }}
+    >
+      <Picker
+        selectedValue={habit?.type}
+        onValueChange={(v) =>setHabit(habit => ({ ...habit!, type: v }))}
+      >
+        <Picker.Item label="Bad habit (want to reduce)" value="bad" />
+        <Picker.Item label="Good habit (want to maintain)" value="good" />
+      </Picker>
+    </View>
+
+    <Pressable
+      onPress={submit}
+      style={{
+        marginTop: 20,
+        padding: 14,
+        borderRadius: 12,
+        borderWidth: 1,
+        alignItems: "center",
+      }}
+    >
+      <Text style={{ fontWeight: "700", color: "#000" }}>Add Habit</Text>
+    </Pressable>
+  </View>
+  );
+}
