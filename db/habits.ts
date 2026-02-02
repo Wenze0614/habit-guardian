@@ -1,3 +1,4 @@
+import { Habit } from "@/app/(tabs)/addHabit";
 import * as crypto from "expo-crypto";
 import { db } from "./db";
 
@@ -7,53 +8,79 @@ export type HabitRow = {
     type: "good" | "bad";
     created_at: string;
     archived: 0 | 1;
+    priority: number;
 };
 
 export function listGoodHabits() {
+    return db.getAllSync<{
+        id: string;
+        name: string;
+        type: "good" | "bad";
+        created_at: string;
+        archived: 0 | 1;
+        priority: number;
+    }>(
+        `
+      SELECT id, name, type, created_at, archived, priority
+      FROM habits
+      WHERE type = 'good' AND archived = 0
+      ORDER BY priority DESC;
+      `
+    );
     // return db.getAllSync<{
-    //   id: string;
+    //           id: string;
     //   name: string;
     //   type: "good" | "bad";
     //   created_at: string;
     //   archived: 0 | 1;
-    // }>(
-    //   `
-    //   SELECT id, name, type, created_at, archived
-    //   FROM habits
-    //   WHERE type = 'good' AND archived = 0
-    //   ORDER BY created_at DESC;
-    //   `
-    // );
+    // }>(`SELECT id, name, type, archived, created_at FROM habits ORDER BY created_at DESC;`);
+}
+
+export function listBadHabits() {
     return db.getAllSync<{
-              id: string;
-      name: string;
-      type: "good" | "bad";
-      created_at: string;
-      archived: 0 | 1;
-    }>(`SELECT id, name, type, archived, created_at FROM habits ORDER BY created_at DESC;`);
+        id: string;
+        name: string;
+        type: "good" | "bad";
+        created_at: string;
+        archived: 0 | 1;
+        priority: number;
+    }>(
+        `
+      SELECT id, name, type, created_at, archived, priority
+      FROM habits
+      WHERE type = 'bad' AND archived = 0
+      ORDER BY priority DESC;
+      `
+    );
 }
 
 export function listHabits(includeArchived = false): HabitRow[] {
     if (includeArchived) {
         return db.getAllSync<HabitRow>(
-            `SELECT id, name, created_at, archived FROM habits ORDER BY created_at DESC;`
+            `SELECT id, name, created_at, archived, priority FROM habits ORDER BY created_at DESC;`
         );
     }
     return db.getAllSync<HabitRow>(
-        `SELECT id, name, created_at, archived FROM habits WHERE archived=0 ORDER BY created_at DESC;`
+        `SELECT id, name, created_at, archived, priority FROM habits WHERE archived=0 ORDER BY created_at DESC;`
     );
 }
 
-export function addHabit(name: string, type: "good" | "bad"): HabitRow {
+export function addHabit(habit: Habit): HabitRow {
+    const name = habit.name;;
+    const type = habit.type;
+    const priority = habit.priority ?? 0;
+    console.log("Adding habit:", { name, type, priority });
+
+
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
     db.runSync(
-        `INSERT INTO habits (id, name, type, created_at, archived) VALUES (?, ?, ?, ?, 0);`,
-        [id, name.trim(), type, now]
+        `INSERT INTO habits (id, name, type, created_at,priority,archived) VALUES (?, ?, ?, ?, ?, 0);`,
+        [id, name.trim(), type, now, priority]
     );
 
-    return { id, name: name.trim(), type, created_at: now, archived: 0 };
+    return { id, name: name.trim(), type, created_at: now, archived: 0, priority };
 }
 
 export function archiveHabit(habitId: string, archived: boolean) {

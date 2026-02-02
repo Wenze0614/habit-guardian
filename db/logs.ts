@@ -5,7 +5,6 @@ export type HabitLogRow = {
   date: string;      // YYYY-MM-DD
   status: 0 | 1;
   note: string | null;
-  created_at: string;
 };
 
 export function upsertHabitLog(args: {
@@ -14,12 +13,11 @@ export function upsertHabitLog(args: {
   status: boolean;         // true=success, false=slip
   note?: string;
 }) {
-  const createdAt = new Date().toISOString();
 
   db.runSync(
     `
-    INSERT INTO habit_logs (habit_id, date, status, note, created_at)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO habit_logs (habit_id, date, status, note)
+    VALUES (?, ?, ?, ?)
     ON CONFLICT(habit_id, date) DO UPDATE SET
       status=excluded.status,
       note=excluded.note;
@@ -28,8 +26,7 @@ export function upsertHabitLog(args: {
       args.habitId,
       args.date,
       args.status ? 1 : 0,
-      args.note ?? null,
-      createdAt,
+      args.note ?? null
     ]
   );
 }
@@ -37,7 +34,7 @@ export function upsertHabitLog(args: {
 export function getHabitLogForDate(habitId: string, date: string): HabitLogRow | null {
   return (
     db.getFirstSync<HabitLogRow>(
-      `SELECT habit_id, date, status, note, created_at
+      `SELECT habit_id, date, status, note
        FROM habit_logs
        WHERE habit_id=? AND date=?;`,
       [habitId, date]

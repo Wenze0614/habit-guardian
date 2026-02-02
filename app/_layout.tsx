@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { initDb } from '@/db/db';
+import { resetDb } from '@/db/db';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEffect } from 'react';
 
@@ -14,7 +14,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   useEffect(() => {
-    initDb(); 
+    resetDb(); // For development purposes only: reset DB on app start
   }, []);
 
   return (
