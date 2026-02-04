@@ -17,16 +17,9 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
       }}>
       <Tabs.Screen
-        name="addHabit"
-        options={{
-          title: 'Add Habit',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="habits"
         options={{
-          title: 'Good Habits',
+          title: 'Habits',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="bubble" color={color} />,
         }}
       />

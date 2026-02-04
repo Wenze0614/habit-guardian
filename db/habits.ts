@@ -1,6 +1,7 @@
-import { Habit } from "@/app/(tabs)/addHabit";
+import { Habit } from "@/app/addHabit";
 import * as crypto from "expo-crypto";
 import { db } from "./db";
+import { addReward, Reward } from "./rewards";
 
 export type HabitRow = {
     id: string;
@@ -65,11 +66,10 @@ export function listHabits(includeArchived = false): HabitRow[] {
     );
 }
 
-export function addHabit(habit: Habit): HabitRow {
+export function addHabit(habit: Habit, rewards?: Reward[]): HabitRow {
     const name = habit.name;;
     const type = habit.type;
     const priority = habit.priority ?? 0;
-    console.log("Adding habit:", { name, type, priority });
 
 
     const id = crypto.randomUUID();
@@ -79,6 +79,12 @@ export function addHabit(habit: Habit): HabitRow {
         `INSERT INTO habits (id, name, type, created_at,priority,archived) VALUES (?, ?, ?, ?, ?, 0);`,
         [id, name.trim(), type, now, priority]
     );
+
+    if (rewards && rewards.length > 0) {
+        rewards.forEach((reward) => {
+            addReward(reward, id);
+        });
+    }
 
     return { id, name: name.trim(), type, created_at: now, archived: 0, priority };
 }

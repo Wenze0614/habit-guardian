@@ -24,16 +24,28 @@ export function initDb() {
       priority INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+    db.execSync(`
+    CREATE TABLE IF NOT EXISTS rewards (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      habit_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      description TEXT,
+      requirements INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
+  `);
     // Resolutions table
-//     db.execSync(`
-//     CREATE TABLE IF NOT EXISTS resolutions (
-//       id TEXT PRIMARY KEY NOT NULL,
-//       name TEXT NOT NULL,
-//       type TEXT NOT NULL,  -- 1=good habit, 0=bad habit
-//       created_at TEXT NOT NULL,
-//       archived INTEGER NOT NULL DEFAULT 0
-//     );
-//   `);
+    //     db.execSync(`
+    //     CREATE TABLE IF NOT EXISTS resolutions (
+    //       id TEXT PRIMARY KEY NOT NULL,
+    //       name TEXT NOT NULL,
+    //       type TEXT NOT NULL,  -- 1=good habit, 0=bad habit
+    //       created_at TEXT NOT NULL,
+    //       archived INTEGER NOT NULL DEFAULT 0
+    //     );
+    //   `);
 
     db.execSync(`
     CREATE TABLE IF NOT EXISTS habit_logs (
@@ -54,6 +66,7 @@ export function initDb() {
 export function resetDb() {
     db.execSync(`DROP TABLE IF EXISTS habit_logs;`);
     db.execSync(`DROP TABLE IF EXISTS habits;`);
+    db.execSync(`DROP TABLE IF EXISTS rewards;`);
     // db.execSync(`DROP TABLE IF EXISTS resolutions;`);
     initDb();
 }

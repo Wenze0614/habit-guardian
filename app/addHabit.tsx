@@ -1,16 +1,17 @@
 import { addHabit } from "@/db/habits";
-import { router } from "expo-router";
+import { Reward } from "@/db/rewards";
+import { randomUUID } from "expo-crypto";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
-  Button,
   Keyboard,
   Pressable,
   Text,
   TextInput,
   View
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalScreen from "./modal";
 
 export type Habit = {
   name: string;
@@ -92,6 +93,8 @@ function calcStreaksForHabit(logByDate: Record<string, boolean> | undefined) {
 export default function App() {
   const today = dateKey();
   const [habit, setHabit] = useState<Habit>({ name: "", type: "good" });
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const router = useRouter();
 
   function submit() {
     const trimmed = habit?.name.trim();
@@ -101,7 +104,7 @@ export default function App() {
     }
 
     if (habit) {
-      addHabit(habit);
+      addHabit(habit, rewards);
     }
 
 
@@ -109,15 +112,37 @@ export default function App() {
     Keyboard.dismiss();
     setHabit({ name: "", type: "good" });
     Alert.alert("Added", `Saved "${trimmed}" as a ${habit?.type} habit.`);
+    router.back();
+  }
+
+  const addReward = () => {
+    setRewards((prev) => [
+      ...prev,
+      {
+        id: randomUUID(),
+        name: "",
+        type: "one-time",
+        requirements: 0,
+        description: "",
+      },
+    ]);
+  }
+
+  const removeReward = (id: string) => {
+    setRewards((prev) => prev.filter(r => r.id !== id));
+  }
+
+  const updateReward = (id: string, updates: Partial<Reward>) => {
+    setRewards((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
+    );
   }
 
 
   return (
-    <SafeAreaView style={{ flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, backgroundColor: "#fff" }}>
+
+    <ModalScreen name="Add a Habit">
       <View style={{ flex: 1, padding: 16, backgroundColor: "#fff" }}>
-        <Text style={{ fontSize: 22, fontWeight: "700", color: "#000" }}>
-          Add a Habit
-        </Text>
 
         <Text style={{ marginTop: 16, fontWeight: "600", color: "#000" }}>
           Habit name
@@ -218,6 +243,103 @@ export default function App() {
           })}
         </View>
 
+        <View style={{ marginTop: 24 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <Text style={{ fontSize: 18, fontWeight: "700" }}>Rewards</Text>
+
+            <Pressable onPress={addReward} style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
+              <Text style={{ fontSize: 18 }}>＋</Text>
+            </Pressable>
+          </View>
+
+          {rewards.length === 0 ? (
+            <Text style={{ marginTop: 8, color: "#666" }}>
+              No rewards yet. Tap ＋ to add one.
+            </Text>
+          ) : (
+            rewards.map((r, index) => (
+              <View
+                key={r.id}
+                style={{
+                  marginTop: 12,
+                  padding: 12,
+                  borderWidth: 1,
+                  borderRadius: 12,
+                }}
+              >
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={{ fontWeight: "700" }}>Reward {index + 1}</Text>
+
+                  <Pressable onPress={() => removeReward(r.id)} hitSlop={10}>
+                    <Text style={{ fontSize: 16 }}>✕</Text>
+                  </Pressable>
+                </View>
+
+                <Text style={{ marginTop: 10 }}>Name</Text>
+                <TextInput
+                  value={r.name}
+                  onChangeText={(t) => updateReward(r.id, { name: t })}
+                  placeholder="e.g. Buy a Lego set"
+                  style={{ borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 6 }}
+                />
+
+                <Text style={{ marginTop: 10 }}>Description (optional)</Text>
+                <TextInput
+                  value={r.description}
+                  onChangeText={(t) => updateReward(r.id, { description: t })}
+                  placeholder="Why this reward matters to you"
+                  style={{ borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 6 }}
+                />
+
+                <Text style={{ marginTop: 10 }}>Type</Text>
+                <View style={{ flexDirection: "row", marginTop: 6, gap: 8 }}>
+                  {(["one-time", "recurring"] as const).map((type) => {
+                    const isSelected = r.type === type;
+
+                    return (
+                      <Pressable
+                        key={type}
+                        onPress={() =>
+                          updateReward(r.id, { type })
+                        }
+                        style={{
+                          flex: 1,
+                          paddingVertical: 10,
+                          borderRadius: 10,
+                          borderWidth: 1,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: isSelected ? "#000" : "#fff",
+                          borderColor: isSelected ? "#000" : "#ccc",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: isSelected ? "#fff" : "#000",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {{ "one-time": "One-time", recurring: "Recurring" }[type]}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <Text style={{ marginTop: 10 }}>Requirements</Text>
+                <TextInput
+                  value={String(r.requirements)}
+                  onChangeText={(t) =>
+                    updateReward(r.id, { requirements: Number(t.replace(/[^0-9]/g, "")) || 0 })
+                  }
+                  keyboardType="number-pad"
+                  placeholder="e.g. 7"
+                  style={{ borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 6 }}
+                />
+              </View>
+            ))
+          )}
+        </View>
         <Pressable
           onPress={submit}
           style={{
@@ -230,11 +352,7 @@ export default function App() {
         >
           <Text style={{ fontWeight: "700", color: "#000" }}>Add Habit</Text>
         </Pressable>
-        <Button
-          title="Open Modal"
-          onPress={() => router.push("/modal")}
-        />
       </View>
-    </SafeAreaView>
+    </ModalScreen>
   );
 }

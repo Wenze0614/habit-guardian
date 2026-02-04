@@ -1,17 +1,27 @@
-import { Link } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 
-export default function ModalScreen() {
+type ModalScreenProps = {
+  name: string;
+  children: React.ReactNode;
+};
+
+export default function ModalScreen({ name, children }: ModalScreenProps) {
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">This is a modal</ThemedText>
-      <Link href="/" dismissTo style={styles.link}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {children}
+        {/* <Link href="/" dismissTo style={styles.link}>
         <ThemedText type="link">Go to home screen</ThemedText>
-      </Link>
-    </ThemedView>
+      </Link> */}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
