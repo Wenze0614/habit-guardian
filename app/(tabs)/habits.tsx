@@ -3,12 +3,15 @@ import { clearHabitLogForDate, listHabitLogsForHabits, upsertHabitLog } from "@/
 import { addRewardLog, clearRewardLogForDate } from "@/db/rewardLogs";
 import { listRewardsForHabits, RewardRow } from "@/db/rewards";
 import { calcStreaksForHabit } from "@/hooks/useStreak";
+import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 import { ListItem } from "../../components/ui/ListItem";
 import { deleteHabit, listHabits } from "../../db/habits";
+
 
 export type Habit = {
     id: string;
@@ -80,7 +83,7 @@ export default function HabitsScreen() {
     }, [])
 
 
-    const logHabitAction = useCallback((habitId: string) => {
+    const logHabitAction = useCallback(async (habitId: string) => {
         const now = new Date();
         console.log(`Logging habit ${habitId} `);
         upsertHabitLog({ habitId, date: now.toISOString().split('T')[0], status: true, note: "" });
@@ -100,11 +103,21 @@ export default function HabitsScreen() {
                     switch (r.type) {
                         case "one-time":
                             addRewardLog(r.id, h.id, r.quantity);
-                            alert(`Congrats! You've earned the reward: ${r.name} for habit "${h.name}"!`);
+                            //alert(`Congrats! You've earned the reward: ${r.name} for habit "${h.name}"!`);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'You earned new reward!',
+                                text2: 'Great job 💪!',
+                              });
                             break;
                         case "recurring":
                             addRewardLog(r.id, h.id, r.quantity);
-                            alert(`Congrats! You've earned the reward: ${r.name} for habit "${h.name}"!`);
+                            //alert(`Congrats! You've earned the reward: ${r.name} for habit "${h.name}"!`);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'You earned new reward!',
+                                text2: 'Great job 💪!',
+                              });
                             break;
                         default:
                             break;
@@ -118,6 +131,9 @@ export default function HabitsScreen() {
                 }
             })
         });
+        await Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success
+        );
     }, [])
 
     const cancelLogHabitAction = (habitId: string) => {
@@ -135,28 +151,6 @@ export default function HabitsScreen() {
 
     const getListItem = ({ item }: { item: Habit }) => {
 
-        const rightAction = () => {
-            return <View style={styles.buttonContainer}>
-                <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => deleteHabitAction(item.id)}>
-                    <Text style={styles.buttonText}>Delete</Text>
-                </TouchableOpacity>
-            </View>
-        }
-
-        const leftAction = () => {
-            return <View style={styles.buttonContainer}>
-                {!item.isLoggedToday ?
-                    <TouchableOpacity style={[styles.button, styles.logButton]} onPress={() => { logHabitAction(item.id) }}>
-                        <Text style={styles.buttonText}>Log</Text>
-                    </TouchableOpacity>
-                    :
-                    <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => { cancelLogHabitAction(item.id) }}>
-                        <Text style={styles.buttonText}>Cancel</Text>
-                    </TouchableOpacity>
-                }
-
-            </View>
-        }
 
         // return (< ReanimatedSwipeable renderRightActions={rightAction} renderLeftActions={leftAction} >
         //     <Pressable onPress={() => router.push({ pathname: '/habitModal', params: { id: item.id } })} >
@@ -174,7 +168,14 @@ export default function HabitsScreen() {
         //     </Pressable>
         // </ReanimatedSwipeable >)
         return (
-            <ListItem rightAction={rightAction} leftAction={leftAction} item={item}>
+            <ListItem
+                rightActionInfo={{ type: 'delete', onPress: deleteHabitAction, textLabel: "Delete" }}
+                leftActionInfo={{
+                    type: item.isLoggedToday ? 'cancel' : 'log',
+                    onPress: item.isLoggedToday ? cancelLogHabitAction : logHabitAction,
+                    textLabel: item.isLoggedToday ? "Cancel" : "Log"
+
+                }} item={item}>
                 <Text style={{ ...styles.itemText, color: item.isLoggedToday ? Colors.grey[300] : Colors.yellow[100] }}>{item.name}</Text>
                 <Text style={{ fontSize: 16, color: item.isLoggedToday ? Colors.grey[300] : Colors.yellow[100] }}>{item.currentStreak}</Text>
             </ListItem>
@@ -199,11 +200,12 @@ export default function HabitsScreen() {
                 </Text>
             ) : (
 
-                <View style={{ marginTop: 32, flex: 1 }}>
+                <View style={{ marginTop: 32, flex: 1, }}>
                     <FlatList
                         data={habits}
                         renderItem={({ item }) => getListItem({ item })}
                         keyExtractor={(item) => item.id}
+                        showsVerticalScrollIndicator={false}
                     />
                 </View>
             )}
@@ -248,40 +250,5 @@ const styles = StyleSheet.create({
         color: Colors.yellow[100],
         textAlign: "left",
     },
-    buttonContainer: {
-        flexDirection: "row",
-        padding: 6,
-        height: 100,
-    },
-    button: {
-        width: 80,
-        height: "100%",
-        backgroundColor: "red",
-        justifyContent: "center",
-        alignItems: "center",
-        borderRadius: 12,
-        // borderTopRightRadius: 8,
-        // borderBottomRightRadius: 8,
-    },
-    deleteButton: {
-        backgroundColor: "red",
-        // borderTopRightRadius: 8,
-        // borderBottomRightRadius: 8,
-    },
-    logButton: {
-        backgroundColor: "green",
-        // borderTopLeftRadius: 8,
-        // borderBottomLeftRadius: 8,
 
-    },
-    cancelButton: {
-        backgroundColor: "grey",
-        borderTopLeftRadius: 8,
-        borderBottomLeftRadius: 8,
-
-    },
-    buttonText: {
-        color: "#fff",
-        fontWeight: "500",
-    }
 })

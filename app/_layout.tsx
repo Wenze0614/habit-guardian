@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 
 import { Colors } from '@/constants/theme';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Toast from 'react-native-toast-message';
 
 
 export const unstable_settings = {
@@ -39,6 +40,7 @@ export default function RootLayout() {
           {/* <Stack.Screen name="redeemModal" options={{ presentation: 'modal', title: "Redeem Reward", headerStyle: { backgroundColor: "#fff" }, headerTintColor: "#000", contentStyle: { backgroundColor: "#fff" } }} /> */}
         </Stack>
         <StatusBar style="auto" />
+        <Toast />
       </ThemeProvider>
     </GestureHandlerRootView>
 

@@ -2,19 +2,50 @@ import { Habit } from "@/app/(tabs)/habits";
 import { Colors } from "@/constants/theme";
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet } from "react-native";
-import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import { Animated, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import ReanimatedSwipeable, { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+
+type ActionInfo = {
+    type: "log" | "cancel" | "delete";
+    onPress: (id: string) => void;
+    textLabel: string;
+
+}
 
 type ListItemProps = {
-    rightAction: () => React.JSX.Element;
-    leftAction: () => React.JSX.Element;
+    rightActionInfo: ActionInfo;
+    leftActionInfo: ActionInfo;
     children: React.ReactNode;
     item: Habit;
 }
 
-export const ListItem = ({ rightAction, leftAction, item, children }: ListItemProps) => {
+export const ListItem = ({ rightActionInfo, leftActionInfo, item, children }: ListItemProps) => {
     const scale = useRef(new Animated.Value(1)).current;
     const glow = useRef(new Animated.Value(0)).current;
+    const swipeRef = useRef<SwipeableMethods>(null);
+
+    const rightAction = () => {
+        return <View style={styles.buttonContainer}>
+            <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => { rightActionInfo.onPress(item.id);}}>
+                <Text style={styles.buttonText}>Delete</Text>
+            </TouchableOpacity>
+        </View>
+    }
+
+    const leftAction = () => {
+        return <View style={styles.buttonContainer}>
+            {!item.isLoggedToday ?
+                <TouchableOpacity style={[styles.button, styles.logButton]} onPress={() => { leftActionInfo.onPress(item.id); swipeRef.current?.close() }}>
+                    <Text style={styles.buttonText}>Log</Text>
+                </TouchableOpacity>
+                :
+                <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => { leftActionInfo.onPress(item.id); swipeRef.current?.close() }}>
+                    <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+            }
+
+        </View>
+    }
 
 
 
@@ -52,9 +83,9 @@ export const ListItem = ({ rightAction, leftAction, item, children }: ListItemPr
     }, [item.isLoggedToday]);
 
     const shadowOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] });
-    const shadowRadius = glow.interpolate({ inputRange: [0, 1], outputRange: [0, 18] });
+    const shadowRadius = glow.interpolate({ inputRange: [0, 1], outputRange: [0, 3] });
 
-    return (< ReanimatedSwipeable renderRightActions={rightAction} renderLeftActions={leftAction} >
+    return (< ReanimatedSwipeable renderRightActions={rightAction} renderLeftActions={leftAction} ref={swipeRef} >
         <Pressable
             onPress={() => router.push({ pathname: '/habitModal', params: { id: item.id } })}
             style={styles.itemContainer}>
@@ -100,6 +131,42 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0,
         shadowRadius: 0,
+    },
+    buttonContainer: {
+        flexDirection: "row",
+        padding: 6,
+        height: 100,
+    },
+    button: {
+        width: 80,
+        height: "100%",
+        backgroundColor: "red",
+        justifyContent: "center",
+        alignItems: "center",
+        borderRadius: 12,
+        // borderTopRightRadius: 8,
+        // borderBottomRightRadius: 8,
+    },
+    deleteButton: {
+        backgroundColor: "red",
+        // borderTopRightRadius: 8,
+        // borderBottomRightRadius: 8,
+    },
+    logButton: {
+        backgroundColor: "green",
+        // borderTopLeftRadius: 8,
+        // borderBottomLeftRadius: 8,
+
+    },
+    cancelButton: {
+        backgroundColor: "grey",
+        borderTopLeftRadius: 8,
+        borderBottomLeftRadius: 8,
+
+    },
+    buttonText: {
+        color: "#fff",
+        fontWeight: "500",
     }
 }
 )

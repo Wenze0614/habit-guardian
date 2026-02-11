@@ -133,7 +133,8 @@ function seedDb() {
       ('h4', '2026-02-06', 1, 'No pokemon purchase'),
       ('h4', '2026-02-07', 1, 'No pokemon purchase'),
       ('h4', '2026-02-08', 1, 'No pokemon purchase'),
-      ('h4', '2026-02-09', 1, 'No pokemon purchase');
+      ('h4', '2026-02-09', 1, 'No pokemon purchase'),
+      ('h4', '2026-02-10', 1, 'No pokemon purchase');
     `);
 
     // ---- REWARD LOGS ----
