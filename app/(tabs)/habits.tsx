@@ -1,7 +1,7 @@
 import { Colors } from "@/constants/theme";
 import { clearHabitLogForDate, listHabitLogsForHabits, upsertHabitLog } from "@/db/habitLogs";
 import { addRewardLog, clearRewardLogForDate } from "@/db/rewardLogs";
-import { listRewardsForHabits, RewardRow } from "@/db/rewards";
+import { disableReward, listRewardsForHabits, RewardRow } from "@/db/rewards";
 import { calcStreaksForHabit } from "@/hooks/useStreak";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -120,6 +120,7 @@ export default function HabitsScreen() {
                                 position: 'bottom',
                                 bottomOffset: 60,
                             });
+                            disableReward(r.id); // one-time reward should be disabled after receiving
                             break;
                         case "recurring":
                             addRewardLog(r.id, h.id, r.quantity);

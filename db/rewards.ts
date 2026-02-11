@@ -37,7 +37,7 @@ export function listRewardsForHabit(habitId: string): RewardRow[] {
         `
       SELECT id, name, habit_id, type, quantity, description, requirements, created_at
       FROM rewards
-      WHERE habit_id = ? ;
+      WHERE habit_id = ? and enabled = 1;
       `,
         [habitId]
     );
@@ -52,7 +52,7 @@ export function listRewardsForHabits(habitIds: string[]): RewardRow[] {
         `
       SELECT id, name, habit_id, type,quantity,description, requirements, created_at
       FROM rewards
-      WHERE habit_id IN (${placeholders});
+      WHERE habit_id IN (${placeholders}) and enabled = 1;
       `,
         habitIds
     );
@@ -60,6 +60,10 @@ export function listRewardsForHabits(habitIds: string[]): RewardRow[] {
 
 export function deleteReward(rewardId: string) {
     db.runSync(`DELETE FROM rewards WHERE id = ?;`, [rewardId]);
+}
+
+export function disableReward(rewardId: string) {
+    db.runSync(`UPDATE rewards SET enabled=0 WHERE id = ?;`, [rewardId]);
 }
 
 export function getRewardById(rewardId: string): RewardRow | null {

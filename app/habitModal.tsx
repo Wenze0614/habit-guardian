@@ -57,7 +57,9 @@ export default function HabitScreen() {
                                 <Text style={{ fontSize: 12, color: Colors.grey[100] }}>Need {
                                     reward.type === 'one-time' ?
                                         <Text style={{ fontSize: 14, fontWeight: '500', color: Colors.yellow[100] }}>{Math.max(reward.requirements - current)}</Text> :
-                                        <Text style={{ fontSize: 14, fontWeight: '500', color: Colors.yellow[100] }}>{reward.requirements % current}</Text>
+                                        <Text style={{ fontSize: 14, fontWeight: '500', color: Colors.yellow[100] }}>{
+                                            current === 0 ? reward.requirements : Math.max(reward.requirements - current%reward.requirements)
+                                        }</Text>
                                 } log(s) to receive reward</Text>
                             </View>
                         ))}
