@@ -1,7 +1,19 @@
 import * as SQLite from "expo-sqlite";
 
 // Creates/opens a persistent on-device DB file
-export const db = SQLite.openDatabaseSync("habits.db");
+export const db = SQLite.openDatabaseSync("habits_v_1.db");
+
+const SCHEMA_VERSION_KEY = "schema_version";
+const CURRENT_SCHEMA_VERSION = 1;
+
+export function getSchemaVersion(): number {
+    const v = metaGet(SCHEMA_VERSION_KEY);
+    return v ? parseInt(v, 10) : 0;
+}
+
+export function setSchemaVersion(v: number) {
+    metaSet(SCHEMA_VERSION_KEY, String(v));
+}
 
 /**
  * Run once on app start.
@@ -11,6 +23,12 @@ export const db = SQLite.openDatabaseSync("habits.db");
 export function initDb() {
     // Foreign keys are off by default in SQLite unless enabled per connection
     db.execSync(`PRAGMA foreign_keys = ON;`);
+
+    db.execSync(`
+    CREATE TABLE IF NOT EXISTS meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );`);
 
     // Create tables if they don't exist
     // Habits table
@@ -78,8 +96,11 @@ export function initDb() {
     // Helpful indexes for performance
     db.execSync(`CREATE INDEX IF NOT EXISTS idx_habit_logs_date ON habit_logs(date);`);
     db.execSync(`CREATE INDEX IF NOT EXISTS idx_habit_logs_habit ON habit_logs(habit_id);`);
+
+    setSchemaVersion(CURRENT_SCHEMA_VERSION);
 }
 
+// For testing purposes, drops all tables and recreates them with seed data
 export function resetDb() {
     db.execSync(`DROP TABLE IF EXISTS habits;`);
     db.execSync(`DROP TABLE IF EXISTS rewards;`);
@@ -145,4 +166,23 @@ function seedDb() {
       ('rl3', 'r3', 'h3', '2026-02-04', NULL, 1, 0),
       ('rl4', 'r4', 'h4', '2026-02-10', NULL, 15, 0);
     `);
+}
+
+export function metaGet(key: string): string | null {
+    const row = db.getFirstSync(
+        `SELECT value FROM meta WHERE key = ?;`,
+        [key]
+    ) as { value: string } | undefined;
+
+    return row?.value ?? null;
+}
+
+export function metaSet(key: string, value: string) {
+    // UPSERT (SQLite >= 3.24)
+    db.runSync(
+        `INSERT INTO meta (key, value)
+       VALUES (?, ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value;`,
+        [key, value]
+    );
 }

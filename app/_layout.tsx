@@ -3,13 +3,13 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { resetDb } from '@/db/db';
+import { initDb } from '@/db/db';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEffect } from 'react';
 
 import { Colors } from '@/constants/theme';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Toast from 'react-native-toast-message';
+import Toast, { BaseToast } from 'react-native-toast-message';
 
 
 export const unstable_settings = {
@@ -19,8 +19,31 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   useEffect(() => {
-    resetDb(); // For development purposes only: reset DB on app start
+    initDb(); // For development purposes only: reset DB on app start
   }, []);
+
+  const toastConfig = {
+    success: (props: any) => (
+      <BaseToast
+        {...props}
+        style={{
+          borderLeftColor: Colors.yellow[100], // yellow accent line
+          backgroundColor: Colors.grey[500], // dark grey background
+          borderRadius: 12,
+        }}
+        contentContainerStyle={{ paddingHorizontal: 16 }}
+        text1Style={{
+          fontSize: 16,
+          fontWeight: '700',
+          color: Colors.yellow[100], // yellow title
+        }}
+        text2Style={{
+          fontSize: 14,
+          color: Colors.yellow[100], // light grey text
+        }}
+      />
+    ),
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -36,11 +59,18 @@ export default function RootLayout() {
               headerTintColor: Colors.yellow[100], // back arrow + title color
               headerTitleStyle: { color: Colors.yellow[100] },
             }} />
-          <Stack.Screen name="habitModal" options={{ presentation: 'modal', title: "Habit Details", headerStyle: { backgroundColor: "#fff" }, headerTintColor: "#000", contentStyle: { backgroundColor: "#fff" } }} />
+          <Stack.Screen name="habitModal"
+            options={{
+              presentation: 'modal',
+              title: "Habit Details",
+              headerStyle: { backgroundColor: Colors.grey[500] },
+              headerTintColor: Colors.yellow[100], // back arrow + title color
+              headerTitleStyle: { color: Colors.yellow[100] },
+            }} />
           {/* <Stack.Screen name="redeemModal" options={{ presentation: 'modal', title: "Redeem Reward", headerStyle: { backgroundColor: "#fff" }, headerTintColor: "#000", contentStyle: { backgroundColor: "#fff" } }} /> */}
         </Stack>
         <StatusBar style="auto" />
-        <Toast />
+        <Toast config={toastConfig} />
       </ThemeProvider>
     </GestureHandlerRootView>
 

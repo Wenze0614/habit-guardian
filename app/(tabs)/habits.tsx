@@ -5,8 +5,8 @@ import { listRewardsForHabits, RewardRow } from "@/db/rewards";
 import { calcStreaksForHabit } from "@/hooks/useStreak";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { AppState, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { ListItem } from "../../components/ui/ListItem";
@@ -27,6 +27,15 @@ export default function HabitsScreen() {
     const [habits, setHabits] = useState<Habit[]>([]);
     // const [rewards, setRewards] = useState<Reward[]>([]);
     const router = useRouter();
+
+    useEffect(() => {
+        const sub = AppState.addEventListener("change", (state) => {
+          if (state === "active") {
+            load(); // recompute isLoggedToday + streaks
+          }
+        });
+        return () => sub.remove();
+      }, []);
 
     useFocusEffect(
         useCallback(() => {
@@ -108,7 +117,9 @@ export default function HabitsScreen() {
                                 type: 'success',
                                 text1: 'You earned new reward!',
                                 text2: 'Great job 💪!',
-                              });
+                                position: 'bottom',
+                                bottomOffset: 60,
+                            });
                             break;
                         case "recurring":
                             addRewardLog(r.id, h.id, r.quantity);
@@ -117,7 +128,9 @@ export default function HabitsScreen() {
                                 type: 'success',
                                 text1: 'You earned new reward!',
                                 text2: 'Great job 💪!',
-                              });
+                                position: 'bottom',
+                                bottomOffset: 60,
+                            });
                             break;
                         default:
                             break;

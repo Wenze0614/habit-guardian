@@ -3,8 +3,8 @@ import { listUnusedRewardLogs, redeemPartialRewardLog, redeemRewardLog } from "@
 import { getRewardById } from "@/db/rewards";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { AppState, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type RewardLog = {
@@ -32,28 +32,42 @@ export default function RewardsScreen() {
     const [rewardLogs, setRewardLogs] = useState<RewardLog[]>([]);
     const [redeemModal, setRedeemModal] = useState<RedeemModalState>({ visible: false, rewardLogId: null, maxQuantity: 1, redeemQuantity: 1 });
 
+    // Listen to app state changes to refresh rewards when user comes back to the app
+    useEffect(() => {
+        const sub = AppState.addEventListener("change", (state) => {
+            if (state === "active") {
+                load(); // recompute isLoggedToday + streaks
+            }
+        });
+        return () => sub.remove();
+    }, []);
+
     useFocusEffect(
         useCallback(() => {
-            const data = listUnusedRewardLogs();
-            const rewardDetails = data.map(rewardLog => {
-                const d = getRewardById(rewardLog.reward_id);
-                return {
-                    id: rewardLog.id,
-                    rewardId: rewardLog.reward_id,
-                    habitId: rewardLog.habit_id,
-                    name: d?.name ?? "Unknown Reward",
-                    description: d?.description ?? "",
-                    requirements: d?.requirements ?? 1,
-                    type: d?.type ?? "one-time",
-                    quantity: rewardLog?.quantity ?? 1,
-                    dateReceived: rewardLog.date_received,
-                    dateRedeemed: rewardLog.date_redeemed,
-                    used: rewardLog.used === 1
-                }
-            })
-            setRewardLogs(rewardDetails);
+            load();
         }, [])
     )
+
+    const load = () => {
+        const data = listUnusedRewardLogs();
+        const rewardDetails = data.map(rewardLog => {
+            const d = getRewardById(rewardLog.reward_id);
+            return {
+                id: rewardLog.id,
+                rewardId: rewardLog.reward_id,
+                habitId: rewardLog.habit_id,
+                name: d?.name ?? "Unknown Reward",
+                description: d?.description ?? "",
+                requirements: d?.requirements ?? 1,
+                type: d?.type ?? "one-time",
+                quantity: rewardLog?.quantity ?? 1,
+                dateReceived: rewardLog.date_received,
+                dateRedeemed: rewardLog.date_redeemed,
+                used: rewardLog.used === 1
+            }
+        })
+        setRewardLogs(rewardDetails);
+    }
 
     const onPressRedeem = (rewardLogId: string, quantity: number) => {
         if (quantity === 1) {

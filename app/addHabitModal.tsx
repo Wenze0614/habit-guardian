@@ -283,7 +283,7 @@ export default function AddHabit() {
                 <TextInput
                   value={String(r.quantity)}
                   onChangeText={(t) =>
-                    updateReward(r.id, { quantity: Number(t.replace(/[^0-9]/g, "")) || 1 })
+                    updateReward(r.id, { quantity: Number(t.replace(/[^0-9]/g, "")) || 0 })
                   }
                   keyboardType="number-pad"
                   placeholder="e.g. 7"

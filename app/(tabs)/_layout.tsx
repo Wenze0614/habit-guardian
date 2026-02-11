@@ -20,7 +20,7 @@ export default function TabLayout() {
         name="habits"
         options={{
           title: 'Habits',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="bubble" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name='target' color={color} />,
         }}
       />
       <Tabs.Screen
@@ -28,6 +28,12 @@ export default function TabLayout() {
         options={{
           title: 'Rewards',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="gift" color={color} />,
+        }} />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name='gear' color={color} />,
         }} />
     </Tabs>
   );
