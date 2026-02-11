@@ -45,3 +45,27 @@ export function getHabitLogForDate(habitId: string, date: string): HabitLogRow |
 export function clearHabitLogForDate(habitId: string, date: string) {
   db.runSync(`DELETE FROM habit_logs WHERE habit_id=? AND date=?;`, [habitId, date]);
 }
+
+export function listHabitLogs(habitId: string): HabitLogRow[] {
+  return db.getAllSync<HabitLogRow>(
+    `
+      SELECT habit_id, date, status, note
+      FROM habit_logs
+      WHERE habit_id=?
+      ORDER BY date ASC;
+    `,
+    [habitId]
+  );
+}
+
+export function listHabitLogsForHabits(habitIds: string[]): HabitLogRow[] {
+  if (habitIds.length === 0) return [];
+  const placeholders = habitIds.map(() => '?').join(', ');
+  return db.getAllSync<HabitLogRow>(
+    `SELECT habit_id, date, status, note
+     FROM habit_logs
+     WHERE habit_id IN (${placeholders})
+     ORDER BY habit_id, date;`,
+    habitIds
+  );
+}

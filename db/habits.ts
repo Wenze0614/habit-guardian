@@ -1,7 +1,7 @@
-import { Habit } from "@/app/addHabit";
+import { AddHabit } from "@/app/addHabitModal";
 import * as crypto from "expo-crypto";
 import { db } from "./db";
-import { addReward, Reward } from "./rewards";
+import { addReward, RewardRow } from "./rewards";
 
 export type HabitRow = {
     id: string;
@@ -66,7 +66,16 @@ export function listHabits(includeArchived = false): HabitRow[] {
     );
 }
 
-export function addHabit(habit: Habit, rewards?: Reward[]): HabitRow {
+export function getHabitById(habitId: string): HabitRow | null {
+    return (
+        db.getFirstSync<HabitRow>(
+            `SELECT id, name, type, created_at, archived, priority FROM habits WHERE id=?;`,
+            [habitId]
+        ) ?? null
+    );
+}
+
+export function addHabit(habit: AddHabit, rewards?: RewardRow[]): HabitRow {
     const name = habit.name;;
     const type = habit.type;
     const priority = habit.priority ?? 0;

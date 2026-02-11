@@ -1,19 +1,20 @@
+import { Colors } from '@/constants/theme';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
 
 type ModalScreenProps = {
   name: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 };
 
 export default function ModalScreen({ name, children }: ModalScreenProps) {
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: Colors.grey[500] }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 80, backgroundColor: Colors.grey[500] }}
         keyboardShouldPersistTaps="handled"
       >
         {children}
