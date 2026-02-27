@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 type RewardLog = {
     id: string;
     rewardId: string;
-    habitId: string;
+    habitId: string | null;
     name: string;
     description: string;
     requirements: number;

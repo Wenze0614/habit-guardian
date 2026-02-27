@@ -4,7 +4,7 @@ import { db } from "./db";
 export type RewardLogRow = {
     id: string;
     reward_id: string;
-    habit_id: string;
+    habit_id: string | null;
     date_received: string;          // YYYY-MM-DD (when granted)
     date_redeemed: string | null;  // YYYY-MM-DD (when user redeems, null if not redeemed yet)
     quantity: number;

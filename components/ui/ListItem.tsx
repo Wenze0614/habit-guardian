@@ -82,9 +82,6 @@ export const ListItem = ({ rightActionInfo, leftActionInfo, item, children }: Li
 
     }, [item.isLoggedToday]);
 
-    const shadowOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] });
-    const shadowRadius = glow.interpolate({ inputRange: [0, 1], outputRange: [0, 8] });
-
     return (< ReanimatedSwipeable renderRightActions={rightAction} renderLeftActions={leftAction} ref={swipeRef} >
         <Pressable
             onPress={() => router.push({ pathname: '/habitModal', params: { id: item.id } })}

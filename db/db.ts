@@ -4,7 +4,7 @@ import * as SQLite from "expo-sqlite";
 export const db = SQLite.openDatabaseSync("habits_v_1.db");
 
 const SCHEMA_VERSION_KEY = "schema_version";
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
 
 export function getSchemaVersion(): number {
     const v = metaGet(SCHEMA_VERSION_KEY);
@@ -82,14 +82,14 @@ export function initDb() {
     CREATE TABLE IF NOT EXISTS reward_logs (
         id TEXT PRIMARY KEY NOT NULL,
         reward_id TEXT NOT NULL,
-        habit_id TEXT NOT NULL,
+        habit_id TEXT,
         date_received TEXT NOT NULL,          -- YYYY-MM-DD (when granted)
         date_redeemed TEXT,                    -- YYYY-MM-DD (when user redeems, null if not redeemed yet)
         used INTEGER NOT NULL DEFAULT 0,             -- 0=not redeemed, 1=redeemed 
         quantity INTEGER NOT NULL DEFAULT 1,
         UNIQUE (reward_id, date_received),    -- prevents duplicates for same day
         FOREIGN KEY (reward_id) REFERENCES rewards(id) ON DELETE CASCADE,
-        FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE
+        FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE SET NULL
     );
   `);
 
@@ -97,7 +97,48 @@ export function initDb() {
     db.execSync(`CREATE INDEX IF NOT EXISTS idx_habit_logs_date ON habit_logs(date);`);
     db.execSync(`CREATE INDEX IF NOT EXISTS idx_habit_logs_habit ON habit_logs(habit_id);`);
 
+    const schemaVersion = getSchemaVersion();
+    if (schemaVersion > 0 && schemaVersion < 2) {
+        migrateToV2();
+    }
+
     setSchemaVersion(CURRENT_SCHEMA_VERSION);
+}
+
+function migrateToV2() {
+    db.execSync(`PRAGMA foreign_keys = OFF;`);
+    db.execSync(`BEGIN TRANSACTION;`);
+    try {
+        db.execSync(`
+      CREATE TABLE IF NOT EXISTS reward_logs_v2 (
+          id TEXT PRIMARY KEY NOT NULL,
+          reward_id TEXT NOT NULL,
+          habit_id TEXT,
+          date_received TEXT NOT NULL,
+          date_redeemed TEXT,
+          used INTEGER NOT NULL DEFAULT 0,
+          quantity INTEGER NOT NULL DEFAULT 1,
+          UNIQUE (reward_id, date_received),
+          FOREIGN KEY (reward_id) REFERENCES rewards(id) ON DELETE CASCADE,
+          FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE SET NULL
+      );
+    `);
+
+        db.execSync(`
+      INSERT INTO reward_logs_v2 (id, reward_id, habit_id, date_received, date_redeemed, used, quantity)
+      SELECT id, reward_id, habit_id, date_received, date_redeemed, used, quantity
+      FROM reward_logs;
+    `);
+
+        db.execSync(`DROP TABLE reward_logs;`);
+        db.execSync(`ALTER TABLE reward_logs_v2 RENAME TO reward_logs;`);
+        db.execSync(`COMMIT;`);
+    } catch (error) {
+        db.execSync(`ROLLBACK;`);
+        throw error;
+    } finally {
+        db.execSync(`PRAGMA foreign_keys = ON;`);
+    }
 }
 
 // For testing purposes, drops all tables and recreates them with seed data
