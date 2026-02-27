@@ -1,5 +1,5 @@
 import { Habit } from "@/app/(tabs)/habits";
-import { Colors } from "@/constants/theme";
+import { Colors, Radii, Shadows, Spacing } from "@/constants/theme";
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -83,7 +83,7 @@ export const ListItem = ({ rightActionInfo, leftActionInfo, item, children }: Li
     }, [item.isLoggedToday]);
 
     const shadowOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] });
-    const shadowRadius = glow.interpolate({ inputRange: [0, 1], outputRange: [0, 3] });
+    const shadowRadius = glow.interpolate({ inputRange: [0, 1], outputRange: [0, 8] });
 
     return (< ReanimatedSwipeable renderRightActions={rightAction} renderLeftActions={leftAction} ref={swipeRef} >
         <Pressable
@@ -91,7 +91,7 @@ export const ListItem = ({ rightActionInfo, leftActionInfo, item, children }: Li
             style={styles.itemContainer}>
             <Animated.View style={{
                 ...styles.item,
-                backgroundColor: item.isLoggedToday ? Colors.yellow[50] : Colors.grey[500],
+                backgroundColor: item.isLoggedToday ? Colors.ui.surfaceSoft : Colors.ui.surface,
                 transform: [{ scale }],
                 shadowOpacity,
                 shadowRadius,
@@ -107,66 +107,59 @@ export const ListItem = ({ rightActionInfo, leftActionInfo, item, children }: Li
 
 const styles = StyleSheet.create({
     itemContainer: {
-        padding: 6,
+        paddingVertical: Spacing.xs,
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
         width: "100%",
-        height: 100,
+        minHeight: 96,
 
     },
     item: {
-        backgroundColor: "#f1f1f1",
-        padding: 20,
-        height: 80,
+        paddingHorizontal: Spacing.lg,
+        height: 84,
         width: "100%",
-        borderRadius: 12,
-        // borderTopLeftRadius: 8,
-        // borderBottomLeftRadius: 8,
+        borderRadius: Radii.md,
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        // iOS glow
-        shadowColor: "#FCC419", // yellow
+        borderColor: Colors.ui.border,
+        borderWidth: 1,
+        shadowColor: Colors.ui.accent,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0,
         shadowRadius: 0,
+        ...Shadows.card,
     },
     buttonContainer: {
         flexDirection: "row",
-        padding: 6,
-        height: 100,
+        paddingVertical: Spacing.xs,
+        height: 96,
     },
     button: {
         width: 80,
         height: "100%",
-        backgroundColor: "red",
+        backgroundColor: Colors.ui.danger,
         justifyContent: "center",
         alignItems: "center",
-        borderRadius: 12,
-        // borderTopRightRadius: 8,
-        // borderBottomRightRadius: 8,
+        borderRadius: Radii.md,
     },
     deleteButton: {
-        backgroundColor: "red",
-        // borderTopRightRadius: 8,
-        // borderBottomRightRadius: 8,
+        backgroundColor: Colors.ui.danger,
     },
     logButton: {
-        backgroundColor: "green",
-        // borderTopLeftRadius: 8,
-        // borderBottomLeftRadius: 8,
+        backgroundColor: Colors.ui.success,
 
     },
     cancelButton: {
-        backgroundColor: "grey",
-        borderTopLeftRadius: 8,
-        borderBottomLeftRadius: 8,
+        backgroundColor: Colors.ui.textMuted,
+        borderTopLeftRadius: Radii.md,
+        borderBottomLeftRadius: Radii.md,
 
     },
     buttonText: {
-        color: "#fff",
-        fontWeight: "500",
+        color: Colors.ui.background,
+        fontWeight: "700",
     }
 }
 )

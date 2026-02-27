@@ -40,7 +40,54 @@ export const Colors = {
     300: '#464C5B',
     400: '#303444',
     500: '#1E212C',
-  }
+  },
+  ui: {
+    background: '#151822',
+    surface: '#1D2230',
+    surfaceSoft: '#242A3B',
+    border: '#3A4258',
+    textPrimary: '#F0D678',
+    textSecondary: '#C3C9D5',
+    textMuted: '#8E97AB',
+    accent: '#F0D678',
+    accentStrong: '#EDC148',
+    danger: '#D16067',
+    success: '#5FAF82',
+    overlay: 'rgba(10, 12, 20, 0.72)',
+  },
+};
+
+export const Radii = {
+  sm: 10,
+  md: 14,
+  lg: 18,
+  pill: 999,
+};
+
+export const Spacing = {
+  xs: 6,
+  sm: 10,
+  md: 14,
+  lg: 18,
+  xl: 24,
+  xxl: 32,
+};
+
+export const Shadows = {
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  glow: {
+    shadowColor: '#F0D678',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 2,
+  },
 };
 
 export const Fonts = Platform.select({

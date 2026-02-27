@@ -7,7 +7,7 @@ import { initDb } from '@/db/db';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEffect } from 'react';
 
-import { Colors } from '@/constants/theme';
+import { Colors, Radii } from '@/constants/theme';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast, { BaseToast } from 'react-native-toast-message';
 
@@ -27,9 +27,9 @@ export default function RootLayout() {
       <BaseToast
         {...props}
         style={{
-          borderLeftColor: Colors.yellow[100], // yellow accent line
-          backgroundColor: Colors.grey[500], // dark grey background
-          borderRadius: 12,
+          borderLeftColor: Colors.ui.accent,
+          backgroundColor: Colors.ui.surfaceSoft,
+          borderRadius: Radii.md,
         }}
         contentContainerStyle={{ paddingHorizontal: 16 }}
         text1Style={{
@@ -54,18 +54,18 @@ export default function RootLayout() {
             options={{
               presentation: 'modal',
               title: "Add Habit",
-              contentStyle: { backgroundColor: "#fff" },
-              headerStyle: { backgroundColor: Colors.grey[500] },
-              headerTintColor: Colors.yellow[100], // back arrow + title color
-              headerTitleStyle: { color: Colors.yellow[100] },
+              contentStyle: { backgroundColor: Colors.ui.background },
+              headerStyle: { backgroundColor: Colors.ui.surface },
+              headerTintColor: Colors.ui.accent,
+              headerTitleStyle: { color: Colors.ui.accent, fontWeight: "700" },
             }} />
           <Stack.Screen name="habitModal"
             options={{
               presentation: 'modal',
               title: "Habit Details",
-              headerStyle: { backgroundColor: Colors.grey[500] },
-              headerTintColor: Colors.yellow[100], // back arrow + title color
-              headerTitleStyle: { color: Colors.yellow[100] },
+              headerStyle: { backgroundColor: Colors.ui.surface },
+              headerTintColor: Colors.ui.accent,
+              headerTitleStyle: { color: Colors.ui.accent, fontWeight: "700" },
             }} />
           {/* <Stack.Screen name="redeemModal" options={{ presentation: 'modal', title: "Redeem Reward", headerStyle: { backgroundColor: "#fff" }, headerTintColor: "#000", contentStyle: { backgroundColor: "#fff" } }} /> */}
         </Stack>

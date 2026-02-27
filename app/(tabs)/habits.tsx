@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/theme";
+import { Colors, Radii, Shadows, Spacing } from "@/constants/theme";
 import { clearHabitLogForDate, listHabitLogsForHabits, upsertHabitLog } from "@/db/habitLogs";
 import { addRewardLog, clearRewardLogForDate } from "@/db/rewardLogs";
 import { disableReward, listRewardsForHabits, RewardRow } from "@/db/rewards";
@@ -194,31 +194,32 @@ export default function HabitsScreen() {
                     textLabel: item.isLoggedToday ? "Cancel" : "Log"
 
                 }} item={item}>
-                <Text style={{ ...styles.itemText, color: item.isLoggedToday ? Colors.grey[300] : Colors.yellow[100] }}>{item.name}</Text>
-                <Text style={{ fontSize: 16, color: item.isLoggedToday ? Colors.grey[300] : Colors.yellow[100] }}>{item.currentStreak}</Text>
+                <Text style={{ ...styles.itemText, color: item.isLoggedToday ? Colors.ui.textMuted : Colors.ui.textPrimary }}>{item.name}</Text>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: item.isLoggedToday ? Colors.ui.textMuted : Colors.ui.textPrimary }}>{item.currentStreak}</Text>
             </ListItem>
         )
     };
 
     return (
         <SafeAreaView style={styles.habitsContainer}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={{ fontSize: 22, fontWeight: "700", color: Colors.yellow[100] }}>
+            <View style={styles.headerRow}>
+                <Text style={styles.headerText}>
                     Habits
                 </Text>
-                <Pressable onPress={() => router.push("/addHabitModal")} style={{ backgroundColor: Colors.yellow[100], width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 18, color: Colors.grey[400] }}>＋</Text>
+                <Pressable onPress={() => router.push("/addHabitModal")} style={styles.addButton}>
+                    <Text style={styles.addButtonText}>＋</Text>
                 </Pressable>
             </View>
 
 
             {habits.length === 0 ? (
-                <Text style={{ marginTop: 16, color: Colors.yellow[50] }}>
-                    No habits yet.
-                </Text>
+                <View style={styles.emptyStateCard}>
+                    <Text style={styles.emptyStateTitle}>No habits yet</Text>
+                    <Text style={styles.emptyStateSubtitle}>Tap the + button to add your first habit.</Text>
+                </View>
             ) : (
 
-                <View style={{ marginTop: 32, flex: 1, }}>
+                <View style={styles.listWrap}>
                     <FlatList
                         data={habits}
                         renderItem={({ item }) => getListItem({ item })}
@@ -238,10 +239,58 @@ export default function HabitsScreen() {
 const styles = StyleSheet.create({
     habitsContainer: {
         flex: 1,
-        padding: 16,
-        borderRadius: 12,
+        padding: Spacing.lg,
+        backgroundColor: Colors.ui.background,
+    },
+    headerRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: Spacing.md,
+    },
+    headerText: {
+        fontSize: 30,
+        fontWeight: "800",
+        letterSpacing: 0.3,
+        color: Colors.ui.textPrimary,
+    },
+    addButton: {
+        backgroundColor: Colors.ui.accent,
+        width: 38,
+        height: 38,
+        borderRadius: Radii.pill,
+        justifyContent: "center",
+        alignItems: "center",
+        ...Shadows.glow,
+    },
+    addButtonText: {
+        fontSize: 22,
+        lineHeight: 24,
+        color: Colors.ui.background,
+        fontWeight: "700",
+    },
+    emptyStateCard: {
+        marginTop: Spacing.md,
+        borderRadius: Radii.lg,
+        padding: Spacing.xl,
+        backgroundColor: Colors.ui.surface,
         borderWidth: 1,
-        backgroundColor: Colors.grey[400],
+        borderColor: Colors.ui.border,
+        ...Shadows.glow,
+    },
+    emptyStateTitle: {
+        color: Colors.ui.textPrimary,
+        fontWeight: "700",
+        fontSize: 18,
+    },
+    emptyStateSubtitle: {
+        marginTop: Spacing.sm,
+        color: Colors.ui.textSecondary,
+        fontSize: 14,
+    },
+    listWrap: {
+        marginTop: Spacing.md,
+        flex: 1,
     },
     // item: {
     //     backgroundColor: "#f1f1f1",
@@ -262,10 +311,10 @@ const styles = StyleSheet.create({
 
     // },
     itemText: {
-        fontSize: 15,
-        fontWeight: "500",
+        fontSize: 16,
+        fontWeight: "600",
         width: "80%",
-        color: Colors.yellow[100],
+        color: Colors.ui.textPrimary,
         textAlign: "left",
     },
 

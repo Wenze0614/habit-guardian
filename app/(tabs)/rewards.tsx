@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/theme";
+import { Colors, Radii, Shadows, Spacing } from "@/constants/theme";
 import { listUnusedRewardLogs, redeemPartialRewardLog, redeemRewardLog } from "@/db/rewardLogs";
 import { getRewardById } from "@/db/rewards";
 import * as Haptics from "expo-haptics";
@@ -117,27 +117,28 @@ export default function RewardsScreen() {
         //     contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
         //     keyboardShouldPersistTaps="handled"
         // >
-        <SafeAreaView style={{ flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, backgroundColor: Colors.grey[400], }}>
+        <SafeAreaView style={styles.container}>
             <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 22, fontWeight: "700", color: Colors.yellow[100] }}>
+                <Text style={styles.headerText}>
                     Rewards
                 </Text>
                 {rewardLogs.length === 0 ? (
-                    <Text style={{ marginTop: 16, fontSize: 16, color: Colors.grey[200] }}>
-                        No rewards available. Log your habits to earn rewards!
-                    </Text>
+                    <View style={styles.emptyStateCard}>
+                        <Text style={styles.emptyStateTitle}>No rewards yet</Text>
+                        <Text style={styles.emptyStateSubtitle}>Log your habits to earn rewards.</Text>
+                    </View>
                 ) : (
-                    <View style={{ marginTop: 32, flex: 1 }}>
+                    <View style={styles.listWrap}>
                         {rewardLogs.map((log) => (
                             <View style={styles.rewardItemContainer} key={log.id}>
-                                <View key={log.id} style={{ borderRadius: 8, width: "50%" }}>
-                                    <Text style={{ fontSize: 16, fontWeight: "400", color: Colors.grey[400] }}> {log.name}</Text>
+                                <View key={log.id} style={styles.rewardInfo}>
+                                    <Text style={styles.rewardName}>{log.name}</Text>
                                     {/* <Text style={{ fontSize: 14, color: "#555" }}>{log.dateReceived}</Text> */}
                                     {/* Add redeem button or other actions here */}
                                 </View>
-                                <Text style={{ fontSize: 14, fontWeight: "600", color: Colors.yellow[400] }}>{log.quantity}</Text>
-                                <Pressable onPress={() => { onPressRedeem(log.id, log.quantity) }} style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: Colors.yellow[400], borderRadius: 6 }}>
-                                    <Text style={{ color: Colors.yellow[50] }}>Redeem</Text>
+                                <Text style={styles.quantityText}>{log.quantity}</Text>
+                                <Pressable onPress={() => { onPressRedeem(log.id, log.quantity) }} style={styles.redeemButton}>
+                                    <Text style={styles.redeemButtonText}>Redeem</Text>
                                 </Pressable>
                             </View>
                         ))}
@@ -147,9 +148,9 @@ export default function RewardsScreen() {
             {
                 redeemModal.visible && (
                     <View style={styles.redeemModalContainer}>
-                        <View style={{ width: "80%", padding: 20, backgroundColor: Colors.grey[400], borderRadius: 12 }}>
-                            <Text style={{ fontSize: 18, fontWeight: "600", color: Colors.yellow[100] }}>Redeem Reward</Text>
-                            <Text style={{ marginTop: 12, fontSize: 12, color: Colors.grey[100] }}>Enter the quantity you want to redeem</Text>
+                        <View style={{ width: "80%", padding: 20, backgroundColor: Colors.ui.surfaceSoft, borderRadius: 12, borderColor: Colors.ui.border, borderWidth: 1 }}>
+                            <Text style={{ fontSize: 18, fontWeight: "600", color: Colors.ui.textPrimary }}>Redeem Reward</Text>
+                            <Text style={{ marginTop: 12, fontSize: 12, color: Colors.ui.textSecondary }}>Enter the quantity you want to redeem</Text>
                             <TextInput
                                 value={redeemModal.redeemQuantity.toString()}
                                 onChangeText={(t) => {
@@ -158,19 +159,19 @@ export default function RewardsScreen() {
                                 }}
                                 keyboardType="number-pad"
                                 placeholder={`Max: ${redeemModal.maxQuantity}`}
-                                placeholderTextColor={Colors.grey[100]}
-                                style={{ borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 6, borderColor: Colors.yellow[100], color: Colors.yellow[100] }}
+                                placeholderTextColor={Colors.ui.textMuted}
+                                style={{ borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 6, borderColor: Colors.ui.border, color: Colors.ui.textPrimary, backgroundColor: Colors.ui.background }}
                             />
                             <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 20 }}>
                                 <Pressable
                                     onPress={() => setRedeemModal({ visible: false, rewardLogId: null, maxQuantity: 1, redeemQuantity: 1 })}
                                     style={{ paddingHorizontal: 12, paddingVertical: 6, }}>
-                                    <Text style={{ color: Colors.grey[100] }}>Cancel</Text>
+                                    <Text style={{ color: Colors.ui.textSecondary }}>Cancel</Text>
                                 </Pressable>
                                 <Pressable
                                     onPress={() => { onPressRedeemPartial() }}
-                                    style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: Colors.yellow[500], borderRadius: 6, marginLeft: 8 }}>
-                                    <Text style={{ color: Colors.yellow[100] }}>Confirm</Text>
+                                    style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: Colors.ui.accent, borderRadius: 6, marginLeft: 8 }}>
+                                    <Text style={{ color: Colors.ui.background, fontWeight: "700" }}>Confirm</Text>
                                 </Pressable>
                             </View>
                         </View>
@@ -184,15 +185,76 @@ export default function RewardsScreen() {
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        padding: Spacing.lg,
+        backgroundColor: Colors.ui.background,
+    },
+    headerText: {
+        fontSize: 30,
+        fontWeight: "800",
+        letterSpacing: 0.3,
+        color: Colors.ui.textPrimary,
+    },
+    listWrap: {
+        marginTop: Spacing.md,
+        flex: 1,
+    },
+    emptyStateCard: {
+        marginTop: Spacing.md,
+        borderRadius: Radii.lg,
+        padding: Spacing.xl,
+        backgroundColor: Colors.ui.surface,
+        borderWidth: 1,
+        borderColor: Colors.ui.border,
+        ...Shadows.card,
+    },
+    emptyStateTitle: {
+        color: Colors.ui.textPrimary,
+        fontWeight: "700",
+        fontSize: 18,
+    },
+    emptyStateSubtitle: {
+        marginTop: Spacing.sm,
+        color: Colors.ui.textSecondary,
+        fontSize: 14,
+    },
     rewardItemContainer: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        height: 100,
-        padding: 16,
+        minHeight: 92,
+        padding: Spacing.md,
         marginTop: 12,
-        borderRadius: 8,
-        backgroundColor: Colors.yellow[50],
+        borderRadius: Radii.md,
+        backgroundColor: Colors.ui.surface,
+        borderColor: Colors.ui.border,
+        borderWidth: 1,
+        ...Shadows.card,
+    },
+    rewardInfo: {
+        borderRadius: Radii.sm,
+        width: "50%",
+    },
+    rewardName: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: Colors.ui.textPrimary,
+    },
+    quantityText: {
+        fontSize: 14,
+        fontWeight: "700",
+        color: Colors.ui.accentStrong,
+    },
+    redeemButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: Colors.ui.accent,
+        borderRadius: Radii.sm,
+    },
+    redeemButtonText: {
+        color: Colors.ui.background,
+        fontWeight: "700",
     },
     redeemModalContainer: {
         position: "absolute",
@@ -200,7 +262,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
+        backgroundColor: Colors.ui.overlay,
         justifyContent: "center",
         alignItems: "center"
     }
