@@ -58,11 +58,11 @@ export function listBadHabits() {
 export function listHabits(includeArchived = false): HabitRow[] {
     if (includeArchived) {
         return db.getAllSync<HabitRow>(
-            `SELECT id, name, created_at, archived, priority FROM habits ORDER BY created_at DESC;`
+            `SELECT id, name, type, created_at, archived, priority FROM habits ORDER BY created_at DESC;`
         );
     }
     return db.getAllSync<HabitRow>(
-        `SELECT id, name, created_at, archived, priority FROM habits WHERE archived=0 ORDER BY created_at DESC;`
+        `SELECT id, name, type, created_at, archived, priority FROM habits WHERE archived=0 ORDER BY created_at DESC;`
     );
 }
 

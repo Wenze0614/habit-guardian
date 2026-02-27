@@ -105,9 +105,13 @@ export default function HabitsScreen() {
                 console.log("rewards:", h.rewards)
                 h.rewards?.forEach(r => {
                     console.log("reward:", r)
-                    if (newCurrentStreak < r.requirements) {
+                    if (r.requirements <= 0 || newCurrentStreak < r.requirements) {
                         console.log(`Streak ${newCurrentStreak} has not met reward requirement ${r.requirements} for reward ${r.name}`);
                         return; // not eligible for this reward yet
+                    }
+                    if (r.type === "recurring" && newCurrentStreak % r.requirements !== 0) {
+                        console.log(`Streak ${newCurrentStreak} is not a recurring reward checkpoint for requirement ${r.requirements}`);
+                        return;
                     }
                     switch (r.type) {
                         case "one-time":

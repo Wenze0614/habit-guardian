@@ -19,7 +19,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   useEffect(() => {
-    initDb(); // For development purposes only: reset DB on app start
+    initDb();
   }, []);
 
   const toastConfig = {
