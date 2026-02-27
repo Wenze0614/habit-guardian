@@ -1,5 +1,5 @@
 import { Habit } from "@/app/(tabs)/habits";
-import { Colors, Radii, Shadows, Spacing } from "@/constants/theme";
+import { Colors, Radii, Spacing } from "@/constants/theme";
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -92,9 +92,9 @@ export const ListItem = ({ rightActionInfo, leftActionInfo, item, children }: Li
             <Animated.View style={{
                 ...styles.item,
                 backgroundColor: item.isLoggedToday ? Colors.ui.surfaceSoft : Colors.ui.surface,
-                transform: [{ scale }],
-                shadowOpacity,
-                shadowRadius,
+                // transform: [{ scale }],
+                // shadowOpacity,
+                // shadowRadius,
             }}>
                 {children}
                 {/* <Text style={styles.itemText}>{item.name}</Text>
@@ -125,11 +125,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         borderColor: Colors.ui.border,
         borderWidth: 1,
-        shadowColor: Colors.ui.accent,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0,
-        shadowRadius: 0,
-        ...Shadows.card,
+        // shadowColor: Colors.ui.accent,
+        // shadowOffset: { width: 0, height: 0 },
+        // shadowOpacity: 0,
+        // shadowRadius: 0,
+        // ...Shadows.glow,
     },
     buttonContainer: {
         flexDirection: "row",

@@ -194,8 +194,8 @@ export default function HabitsScreen() {
                     textLabel: item.isLoggedToday ? "Cancel" : "Log"
 
                 }} item={item}>
-                <Text style={{ ...styles.itemText, color: item.isLoggedToday ? Colors.ui.textMuted : Colors.ui.textPrimary }}>{item.name}</Text>
-                <Text style={{ fontSize: 16, fontWeight: "700", color: item.isLoggedToday ? Colors.ui.textMuted : Colors.ui.textPrimary }}>{item.currentStreak}</Text>
+                <Text style={{ ...styles.itemText, color: item.isLoggedToday ? Colors.ui.textPrimary :  Colors.ui.textMuted }}>{item.name}</Text>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: item.isLoggedToday ? Colors.ui.textPrimary: Colors.ui.textMuted }}>{item.currentStreak}</Text>
             </ListItem>
         )
     };
