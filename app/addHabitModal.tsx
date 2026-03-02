@@ -1,5 +1,5 @@
 import { Colors, Radii, Shadows, Spacing } from "@/constants/theme";
-import { addHabit } from "@/db/habits";
+import { addHabit, HabitKind } from "@/db/habits";
 import { RewardRow } from "@/db/rewards";
 import { randomUUID } from "expo-crypto";
 import { useRouter } from "expo-router";
@@ -15,14 +15,14 @@ import {
 } from "react-native";
 import ModalScreen from "../components/ui/modal";
 
-export type AddHabit = {
+export type HabitDraft = {
   name: string;
-  type: "good" | "bad";
+  type: HabitKind;
   priority?: number;
 };
 
-export default function AddHabit() {
-  const [habit, setHabit] = useState<AddHabit>({ name: "", type: "good" });
+export default function AddHabitScreen() {
+  const [habit, setHabit] = useState<HabitDraft>({ name: "", type: "habit" });
   const [rewards, setRewards] = useState<RewardRow[]>([]);
   const router = useRouter();
 
@@ -40,8 +40,8 @@ export default function AddHabit() {
 
 
     Keyboard.dismiss();
-    setHabit({ name: "", type: "good" });
-    Alert.alert("Added", `Saved "${trimmed}" as a ${habit?.type} habit.`);
+    setHabit({ name: "", type: "habit" });
+    Alert.alert("Added", `Saved "${trimmed}" as a ${habit.type}.`);
     router.back();
   }
 
@@ -76,7 +76,7 @@ export default function AddHabit() {
 
   return (
 
-    <ModalScreen name="Add a Habit">
+    <ModalScreen name="Add a Habit or Task">
       <View style={styles.container}>
         <Text style={styles.label}>
           Habit name
@@ -118,52 +118,48 @@ export default function AddHabit() {
           style={inputStyle}
         />
 
-        {/* <Text style={{ marginTop: 16, fontWeight: "600", color: "#000" }}>
+        <Text style={styles.label}>
           Type
-        </Text> */}
-
-        {/* <View
-          style={{
-            flexDirection: "row",
-            marginTop: 8,
-            gap: 8,
-          }}
-        >
-          {(["good", "bad"] as const).map((type) => {
-            console.log(habit)
-            const isSelected = habit?.type === type;
+        </Text>
+        <View style={styles.typeRow}>
+          {(["habit", "task"] as const).map((type) => {
+            const isSelected = habit.type === type;
 
             return (
               <Pressable
                 key={type}
-                onPress={() =>
-                  setHabit((h) => ({ ...h!, type }))
-                }
-                style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: isSelected ? "#000" : "#fff",
-                  borderColor: isSelected ? "#000" : "#ccc",
+                onPress={() => {
+                  setHabit((h) => ({ ...h, type }));
+                  if (type === "task") {
+                    setRewards((prev) => prev.map((reward) => ({
+                      ...reward,
+                      type: "one-time",
+                      requirements: 1,
+                    })));
+                  }
                 }}
+                style={[
+                  styles.typeChip,
+                  isSelected ? styles.typeChipSelected : null,
+                ]}
               >
                 <Text
-                  style={{
-                    color: isSelected ? "#fff" : "#000",
-                    fontWeight: "600",
-                  }}
+                  style={[
+                    styles.typeChipText,
+                    isSelected ? styles.typeChipTextSelected : null,
+                  ]}
                 >
-                  {type === "good"
-                    ? "Good"
-                    : "Bad"}
+                  {type === "habit" ? "Habit" : "Task"}
                 </Text>
               </Pressable>
             );
           })}
-        </View> */}
+        </View>
+        <Text style={styles.typeHint}>
+          {habit.type === "habit"
+            ? "Habit: repeatable and streak-based."
+            : "Task: one-time completion item."}
+        </Text>
 
         <View style={{ marginTop: Spacing.xl }}>
           <View style={styles.sectionHeader}>
@@ -211,50 +207,60 @@ export default function AddHabit() {
                 />
 
                 <Text style={styles.subLabel}>Type</Text>
-                <View style={{ flexDirection: "row", marginTop: 6, gap: 8 }}>
-                  {(["one-time", "recurring"] as const).map((type) => {
-                    const isSelected = r.type === type;
+                {habit.type === "task" ? (
+                  <View style={styles.rewardTypeTag}>
+                    <Text style={styles.rewardTypeTagText}>Tasks only support one-time rewards.</Text>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: "row", marginTop: 6, gap: 8 }}>
+                    {(["one-time", "recurring"] as const).map((type) => {
+                      const isSelected = r.type === type;
 
-                    return (
-                      <Pressable
-                        key={type}
-                        onPress={() =>
-                          updateReward(r.id, { type })
-                        }
-                        style={{
-                          flex: 1,
-                          paddingVertical: 10,
-                          borderRadius: Radii.sm,
-                          borderWidth: 0,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: isSelected ? Colors.ui.accent : Colors.ui.surfaceSoft,
-                        }}
-                      >
-                        <Text
+                      return (
+                        <Pressable
+                          key={type}
+                          onPress={() =>
+                            updateReward(r.id, { type })
+                          }
                           style={{
-                            color: isSelected ? Colors.ui.background : Colors.ui.textSecondary,
-                            fontWeight: "600",
+                            flex: 1,
+                            paddingVertical: 10,
+                            borderRadius: Radii.sm,
+                            borderWidth: 0,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: isSelected ? Colors.ui.accent : Colors.ui.surfaceSoft,
                           }}
                         >
-                          {{ "one-time": "One-time", recurring: "Recurring" }[type]}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                          <Text
+                            style={{
+                              color: isSelected ? Colors.ui.background : Colors.ui.textSecondary,
+                              fontWeight: "600",
+                            }}
+                          >
+                            {{ "one-time": "One-time", recurring: "Recurring" }[type]}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
 
-
-                <Text style={styles.subLabel}>Requirements</Text>
+                <Text style={styles.subLabel}>{habit.type === "task" ? "Required Completions" : "Requirements"}</Text>
                 <TextInput
                   value={String(r.requirements)}
                   onChangeText={(t) =>
-                    updateReward(r.id, { requirements: Number(t.replace(/[^0-9]/g, "")) || 0 })
+                    updateReward(r.id, {
+                      requirements: habit.type === "task"
+                        ? 1
+                        : Number(t.replace(/[^0-9]/g, "")) || 0
+                    })
                   }
                   keyboardType="number-pad"
-                  placeholder="e.g. 7"
+                  placeholder={habit.type === "task" ? "1" : "e.g. 7"}
                   placeholderTextColor={Colors.ui.textMuted}
                   style={styles.smallInput}
+                  editable={habit.type !== "task"}
                 />
 
                 <Text style={styles.subLabel}>Reward Quantity</Text>
@@ -276,7 +282,7 @@ export default function AddHabit() {
           onPress={submit}
           style={styles.submitButton}
         >
-          <Text style={styles.submitButtonText}>Add Habit</Text>
+          <Text style={styles.submitButtonText}>Save Item</Text>
         </Pressable>
       </View>
     </ModalScreen>
@@ -308,6 +314,36 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  typeRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  typeChip: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    borderColor: Colors.ui.border,
+    backgroundColor: Colors.ui.surface,
+    alignItems: "center",
+  },
+  typeChipSelected: {
+    backgroundColor: Colors.ui.accent,
+    borderColor: Colors.ui.accent,
+  },
+  typeChipText: {
+    color: Colors.ui.textSecondary,
+    fontWeight: "700",
+  },
+  typeChipTextSelected: {
+    color: Colors.ui.background,
+  },
+  typeHint: {
+    marginTop: Spacing.xs,
+    color: Colors.ui.textMuted,
+    fontSize: 12,
   },
   sectionTitle: {
     fontSize: 20,
@@ -352,6 +388,18 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     color: Colors.ui.textSecondary,
     fontWeight: "600",
+  },
+  rewardTypeTag: {
+    marginTop: 6,
+    borderRadius: Radii.sm,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.ui.surfaceSoft,
+  },
+  rewardTypeTagText: {
+    color: Colors.ui.textSecondary,
+    fontWeight: "600",
+    textAlign: "center",
   },
   smallInput: {
     borderWidth: 1,

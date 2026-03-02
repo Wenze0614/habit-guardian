@@ -4,7 +4,7 @@ import * as SQLite from "expo-sqlite";
 export const db = SQLite.openDatabaseSync("habits_v_1.db");
 
 const SCHEMA_VERSION_KEY = "schema_version";
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 3;
 
 export function getSchemaVersion(): number {
     const v = metaGet(SCHEMA_VERSION_KEY);
@@ -36,7 +36,7 @@ export function initDb() {
     CREATE TABLE IF NOT EXISTS habits (
       id TEXT PRIMARY KEY NOT NULL,
       name TEXT NOT NULL,
-      type TEXT NOT NULL,  -- 1=good habit, 0=bad habit
+      type TEXT NOT NULL,  -- 'habit' = recurring, 'task' = one-time
       created_at TEXT NOT NULL,
       archived INTEGER NOT NULL DEFAULT 0,
       priority INTEGER NOT NULL DEFAULT 0
@@ -61,7 +61,7 @@ export function initDb() {
     //     CREATE TABLE IF NOT EXISTS resolutions (
     //       id TEXT PRIMARY KEY NOT NULL,
     //       name TEXT NOT NULL,
-    //       type TEXT NOT NULL,  -- 1=good habit, 0=bad habit
+    //       type TEXT NOT NULL,  -- 'habit' = recurring, 'task' = one-time
     //       created_at TEXT NOT NULL,
     //       archived INTEGER NOT NULL DEFAULT 0
     //     );
@@ -100,6 +100,9 @@ export function initDb() {
     const schemaVersion = getSchemaVersion();
     if (schemaVersion > 0 && schemaVersion < 2) {
         migrateToV2();
+    }
+    if (schemaVersion > 0 && schemaVersion < 3) {
+        migrateToV3();
     }
 
     setSchemaVersion(CURRENT_SCHEMA_VERSION);
@@ -141,6 +144,16 @@ function migrateToV2() {
     }
 }
 
+function migrateToV3() {
+    db.runSync(
+        `UPDATE habits
+         SET type = CASE
+            WHEN type = 'task' THEN 'task'
+            ELSE 'habit'
+         END;`
+    );
+}
+
 // For testing purposes, drops all tables and recreates them with seed data
 export function resetDb() {
     db.execSync(`DROP TABLE IF EXISTS habits;`);
@@ -158,10 +171,10 @@ function seedDb() {
     // ---- HABITS ----
     db.execSync(`
       INSERT INTO habits (id, name, type, created_at, archived, priority) VALUES
-      ('h1', 'Morning Run', 'good', '${now}', 0, 1),
-      ('h2', 'Read 20 Pages', 'good', '${now}', 0, 2),
-      ('h3', 'No Sugar', 'bad', '${now}', 0, 3),
-      ('h4', 'No Pokemon Purchase(without credits)', 'bad', '${now}', 0, 4);
+      ('h1', 'Morning Run', 'habit', '${now}', 0, 1),
+      ('h2', 'Read 20 Pages', 'habit', '${now}', 0, 2),
+      ('h3', 'No Sugar', 'habit', '${now}', 0, 3),
+      ('h4', 'File Taxes', 'task', '${now}', 0, 4);
     `);
 
     // ---- REWARDS ----

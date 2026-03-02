@@ -27,20 +27,20 @@ export const ListItem = ({ rightActionInfo, leftActionInfo, item, children }: Li
     const rightAction = () => {
         return <View style={styles.buttonContainer}>
             <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => { rightActionInfo.onPress(item.id);}}>
-                <Text style={styles.buttonText}>Delete</Text>
+                <Text style={styles.buttonText}>{rightActionInfo.textLabel}</Text>
             </TouchableOpacity>
         </View>
     }
 
     const leftAction = () => {
         return <View style={styles.buttonContainer}>
-            {!item.isLoggedToday ?
+            {leftActionInfo.type === "log" ?
                 <TouchableOpacity style={[styles.button, styles.logButton]} onPress={() => { leftActionInfo.onPress(item.id); swipeRef.current?.close() }}>
-                    <Text style={styles.buttonText}>Log</Text>
+                    <Text style={styles.buttonText}>{leftActionInfo.textLabel}</Text>
                 </TouchableOpacity>
                 :
                 <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => { leftActionInfo.onPress(item.id); swipeRef.current?.close() }}>
-                    <Text style={styles.buttonText}>Cancel</Text>
+                    <Text style={styles.buttonText}>{leftActionInfo.textLabel}</Text>
                 </TouchableOpacity>
             }
 

@@ -46,6 +46,10 @@ export function clearHabitLogForDate(habitId: string, date: string) {
   db.runSync(`DELETE FROM habit_logs WHERE habit_id=? AND date=?;`, [habitId, date]);
 }
 
+export function clearHabitLogs(habitId: string) {
+  db.runSync(`DELETE FROM habit_logs WHERE habit_id=?;`, [habitId]);
+}
+
 export function listHabitLogs(habitId: string): HabitLogRow[] {
   return db.getAllSync<HabitLogRow>(
     `

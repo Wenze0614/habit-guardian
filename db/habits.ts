@@ -1,22 +1,24 @@
-import { AddHabit } from "@/app/addHabitModal";
+import { HabitDraft } from "@/app/addHabitModal";
 import * as crypto from "expo-crypto";
 import { db } from "./db";
 import { addReward, RewardRow } from "./rewards";
 
+export type HabitKind = "habit" | "task";
+
 export type HabitRow = {
     id: string;
     name: string;
-    type: "good" | "bad";
+    type: HabitKind;
     created_at: string;
     archived: 0 | 1;
     priority: number;
 };
 
-export function listGoodHabits() {
+export function listRecurringHabits() {
     return db.getAllSync<{
         id: string;
         name: string;
-        type: "good" | "bad";
+        type: HabitKind;
         created_at: string;
         archived: 0 | 1;
         priority: number;
@@ -24,24 +26,17 @@ export function listGoodHabits() {
         `
       SELECT id, name, type, created_at, archived, priority
       FROM habits
-      WHERE type = 'good' AND archived = 0
+      WHERE type = 'habit' AND archived = 0
       ORDER BY priority DESC;
       `
     );
-    // return db.getAllSync<{
-    //           id: string;
-    //   name: string;
-    //   type: "good" | "bad";
-    //   created_at: string;
-    //   archived: 0 | 1;
-    // }>(`SELECT id, name, type, archived, created_at FROM habits ORDER BY created_at DESC;`);
 }
 
-export function listBadHabits() {
+export function listTasks() {
     return db.getAllSync<{
         id: string;
         name: string;
-        type: "good" | "bad";
+        type: HabitKind;
         created_at: string;
         archived: 0 | 1;
         priority: number;
@@ -49,7 +44,7 @@ export function listBadHabits() {
         `
       SELECT id, name, type, created_at, archived, priority
       FROM habits
-      WHERE type = 'bad' AND archived = 0
+      WHERE type = 'task' AND archived = 0
       ORDER BY priority DESC;
       `
     );
@@ -75,7 +70,7 @@ export function getHabitById(habitId: string): HabitRow | null {
     );
 }
 
-export function addHabit(habit: AddHabit, rewards?: RewardRow[]): HabitRow {
+export function addHabit(habit: HabitDraft, rewards?: RewardRow[]): HabitRow {
     const name = habit.name;;
     const type = habit.type;
     const priority = habit.priority ?? 0;

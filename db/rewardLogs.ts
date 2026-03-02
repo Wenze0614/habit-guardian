@@ -62,6 +62,10 @@ export const clearRewardLogForDate = (habitId: string, date: string) => {
     db.runSync(`DELETE FROM reward_logs WHERE habit_id=? AND date_received=?;`, [habitId, date]);
 }
 
+export const clearRewardLogsForHabit = (habitId: string) => {
+    db.runSync(`DELETE FROM reward_logs WHERE habit_id=?;`, [habitId]);
+}
+
 export const redeemRewardLog = (rewardLogId: string) => {
     const now = new Date().toISOString().split('T')[0];
     db.runSync(

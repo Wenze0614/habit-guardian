@@ -1,6 +1,6 @@
 import { Colors, Radii, Shadows, Spacing } from "@/constants/theme";
-import { clearHabitLogForDate, listHabitLogsForHabits, upsertHabitLog } from "@/db/habitLogs";
-import { addRewardLog, clearRewardLogForDate } from "@/db/rewardLogs";
+import { clearHabitLogForDate, clearHabitLogs, listHabitLogsForHabits, upsertHabitLog } from "@/db/habitLogs";
+import { addRewardLog, clearRewardLogForDate, clearRewardLogsForHabit } from "@/db/rewardLogs";
 import { disableReward, listRewardsForHabits, RewardRow } from "@/db/rewards";
 import { calcStreaksForHabit } from "@/hooks/useStreak";
 import * as Haptics from "expo-haptics";
@@ -10,15 +10,17 @@ import { AppState, FlatList, Pressable, StyleSheet, Text, View } from "react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { ListItem } from "../../components/ui/ListItem";
-import { deleteHabit, listHabits } from "../../db/habits";
+import { deleteHabit, HabitKind, listHabits } from "../../db/habits";
 
 
 export type Habit = {
     id: string;
     name: string;
-    type: "good" | "bad";
+    type: HabitKind;
     rewards?: RewardRow[];
     isLoggedToday?: boolean;
+    isComplete?: boolean;
+    completionDate?: string | null;
     currentStreak: number;
     bestStreak: number;
 };
@@ -73,14 +75,28 @@ export default function HabitsScreen() {
 
 
         const habitsWithMeta = rows.map((habit) => {
-            // const rewards = listRewardsForHabit(habit.id);
             const today = new Date().toISOString().split('T')[0];
             const todayLog = logsByHabits[habit.id]?.[today];
             const logBydate = logsByHabits[habit.id] || {};
-            const { current, best } = calcStreaksForHabit(logBydate);
-            console.log("rewards for each habit: ", rewardsByHabit[habit.id])
+            const completedDates = Object.entries(logBydate)
+                .filter(([, status]) => status)
+                .map(([date]) => date)
+                .sort();
+            const isComplete = completedDates.length > 0;
+            const completionDate = isComplete ? completedDates[0] : null;
+            const streaks = habit.type === "habit"
+                ? calcStreaksForHabit(logBydate)
+                : { current: isComplete ? 1 : 0, best: isComplete ? 1 : 0 };
 
-            return { ...habit, rewards: rewardsByHabit[habit.id], isLoggedToday: todayLog ? todayLog : false, currentStreak: current, bestStreak: best };
+            return {
+                ...habit,
+                rewards: rewardsByHabit[habit.id],
+                isLoggedToday: todayLog ? todayLog : false,
+                isComplete,
+                completionDate,
+                currentStreak: streaks.current,
+                bestStreak: streaks.best,
+            };
         });
         setHabits(habitsWithMeta);
 
@@ -91,7 +107,6 @@ export default function HabitsScreen() {
         setHabits((prev) => prev.filter(h => h.id !== habitId));
     }, [])
 
-
     const logHabitAction = useCallback(async (habitId: string) => {
         const now = new Date();
         console.log(`Logging habit ${habitId} `);
@@ -100,17 +115,22 @@ export default function HabitsScreen() {
         setHabits((prev) => {
             return prev.map(h => {
                 if (h.id !== habitId) return h; // not the one we're logging
-                const newCurrentStreak = h.currentStreak + 1;
-                const newBestStreak = newCurrentStreak > h.bestStreak ? newCurrentStreak : h.bestStreak;
-                console.log("rewards:", h.rewards)
+                if (h.type === "task" && h.isComplete) {
+                    return h;
+                }
+                const progress = h.type === "task" ? 1 : h.currentStreak + 1;
+                const newBestStreak = h.type === "task" ? progress : Math.max(progress, h.bestStreak);
+
                 h.rewards?.forEach(r => {
-                    console.log("reward:", r)
-                    if (r.requirements <= 0 || newCurrentStreak < r.requirements) {
-                        console.log(`Streak ${newCurrentStreak} has not met reward requirement ${r.requirements} for reward ${r.name}`);
+                    if (h.type === "task" && r.type === "recurring") {
+                        return;
+                    }
+                    if (r.requirements <= 0 || progress < r.requirements) {
+                        console.log(`Progress ${progress} has not met reward requirement ${r.requirements} for reward ${r.name}`);
                         return; // not eligible for this reward yet
                     }
-                    if (r.type === "recurring" && newCurrentStreak % r.requirements !== 0) {
-                        console.log(`Streak ${newCurrentStreak} is not a recurring reward checkpoint for requirement ${r.requirements}`);
+                    if (r.type === "recurring" && progress % r.requirements !== 0) {
+                        console.log(`Progress ${progress} is not a recurring reward checkpoint for requirement ${r.requirements}`);
                         return;
                     }
                     switch (r.type) {
@@ -144,7 +164,9 @@ export default function HabitsScreen() {
                 return {
                     ...h,
                     isLoggedToday: true,
-                    currentStreak: newCurrentStreak,
+                    isComplete: h.type === "task" ? true : h.isComplete,
+                    completionDate: h.type === "task" ? now.toISOString().split('T')[0] : h.completionDate,
+                    currentStreak: progress,
                     bestStreak: newBestStreak
                 }
             })
@@ -156,18 +178,36 @@ export default function HabitsScreen() {
 
     const cancelLogHabitAction = (habitId: string) => {
         const now = new Date();
-        clearHabitLogForDate(habitId, now.toISOString().split('T')[0]);
-        clearRewardLogForDate(habitId, now.toISOString().split('T')[0]);
-        setHabits((prev) => prev.map(h => h.id === habitId ? {
-            ...h,
-            isLoggedToday: false,
-            currentStreak: h.currentStreak - 1,
-        } : h));
+        setHabits((prev) => prev.map(h => {
+            if (h.id !== habitId) return h;
+
+            if (h.type === "task") {
+                clearHabitLogs(habitId);
+                clearRewardLogsForHabit(habitId);
+                return {
+                    ...h,
+                    isLoggedToday: false,
+                    isComplete: false,
+                    completionDate: null,
+                    currentStreak: 0,
+                    bestStreak: 0,
+                };
+            }
+
+            clearHabitLogForDate(habitId, now.toISOString().split('T')[0]);
+            clearRewardLogForDate(habitId, now.toISOString().split('T')[0]);
+            return {
+                ...h,
+                isLoggedToday: false,
+                currentStreak: Math.max(h.currentStreak - 1, 0),
+            };
+        }));
     }
 
 
 
     const getListItem = ({ item }: { item: Habit }) => {
+        const isTaskActionDone = item.type === "task" ? item.isComplete : item.isLoggedToday;
 
 
         // return (< ReanimatedSwipeable renderRightActions={rightAction} renderLeftActions={leftAction} >
@@ -189,13 +229,24 @@ export default function HabitsScreen() {
             <ListItem
                 rightActionInfo={{ type: 'delete', onPress: deleteHabitAction, textLabel: "Delete" }}
                 leftActionInfo={{
-                    type: item.isLoggedToday ? 'cancel' : 'log',
-                    onPress: item.isLoggedToday ? cancelLogHabitAction : logHabitAction,
-                    textLabel: item.isLoggedToday ? "Cancel" : "Log"
+                    type: isTaskActionDone ? 'cancel' : 'log',
+                    onPress: isTaskActionDone ? cancelLogHabitAction : logHabitAction,
+                    textLabel: item.type === "task"
+                        ? (isTaskActionDone ? "Reopen" : "Done")
+                        : (isTaskActionDone ? "Cancel" : "Log")
 
                 }} item={item}>
-                <Text style={{ ...styles.itemText, color: item.isLoggedToday ? Colors.ui.textPrimary :  Colors.ui.textMuted }}>{item.name}</Text>
-                <Text style={{ fontSize: 16, fontWeight: "700", color: item.isLoggedToday ? Colors.ui.textPrimary: Colors.ui.textMuted }}>{item.currentStreak}</Text>
+                <View style={styles.itemContent}>
+                    <Text style={{ ...styles.itemText, color: isTaskActionDone ? Colors.ui.textPrimary : Colors.ui.textMuted }}>{item.name}</Text>
+                    <Text style={styles.itemMeta}>
+                        {item.type === "task"
+                            ? ((item.isComplete ? "Completed" : "Open"))
+                            : `${item.currentStreak} day streak`}
+                    </Text>
+                </View>
+                <Text style={{ fontSize: 14, fontWeight: "700", color: isTaskActionDone ? Colors.ui.textPrimary : Colors.ui.textMuted }}>
+                    {item.type === "task" ? (item.isComplete ? "Done" : "To do") : item.currentStreak}
+                </Text>
             </ListItem>
         )
     };
@@ -204,7 +255,7 @@ export default function HabitsScreen() {
         <SafeAreaView style={styles.habitsContainer}>
             <View style={styles.headerRow}>
                 <Text style={styles.headerText}>
-                    Habits
+                    Habits & Tasks
                 </Text>
                 <Pressable onPress={() => router.push("/addHabitModal")} style={styles.addButton}>
                     <Text style={styles.addButtonText}>＋</Text>
@@ -313,9 +364,16 @@ const styles = StyleSheet.create({
     itemText: {
         fontSize: 16,
         fontWeight: "600",
-        width: "80%",
         color: Colors.ui.textPrimary,
         textAlign: "left",
+    },
+    itemContent: {
+        width: "78%",
+    },
+    itemMeta: {
+        marginTop: 4,
+        fontSize: 12,
+        color: Colors.ui.textMuted,
     },
 
 })

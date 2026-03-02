@@ -53,7 +53,7 @@ export default function RootLayout() {
           <Stack.Screen name="addHabitModal"
             options={{
               presentation: 'modal',
-              title: "Add Habit",
+              title: "Add Item",
               contentStyle: { backgroundColor: Colors.ui.background },
               headerStyle: { backgroundColor: Colors.ui.surface },
               headerTintColor: Colors.ui.accent,

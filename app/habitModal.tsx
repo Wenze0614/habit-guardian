@@ -1,5 +1,5 @@
 import { Colors, Radii, Shadows, Spacing } from "@/constants/theme";
-import { getHabitLogForDate } from "@/db/habitLogs";
+import { getHabitLogForDate, listHabitLogs } from "@/db/habitLogs";
 import { getHabitById } from "@/db/habits";
 import { listRewardsForHabit } from "@/db/rewards";
 import { useStreak } from "@/hooks/useStreak";
@@ -24,15 +24,18 @@ export default function HabitScreen() {
     function load() {
         const habit = getHabitById(id);
         const todayLog = getHabitLogForDate(id, new Date().toISOString().split('T')[0]);
+        const allLogs = listHabitLogs(id);
+        const isTaskComplete = allLogs.some((log) => log.status === 1);
         const rewards = listRewardsForHabit(id);
         setHabit({
             id: habit?.id ?? "",
             name: habit?.name ?? "",
-            type: habit?.type ?? "good",
+            type: habit?.type ?? "habit",
             isLoggedToday: todayLog ? todayLog.status === 1 : false,
             rewards,
-            currentStreak: current,
-            bestStreak: best,
+            isComplete: habit?.type === "task" ? isTaskComplete : undefined,
+            currentStreak: habit?.type === "task" ? (isTaskComplete ? 1 : 0) : current,
+            bestStreak: habit?.type === "task" ? (isTaskComplete ? 1 : 0) : best,
         });
 
     }
@@ -43,9 +46,18 @@ export default function HabitScreen() {
             <View style={styles.container}>
                 <Text style={styles.header}>{habit?.name}</Text>
                 <View style={styles.statCard}>
-                    <Text style={styles.text}>Logged Today: {habit?.isLoggedToday ? "Yes" : "No"}</Text>
-                    <Text style={styles.text}>Current Streak: {current}</Text>
-                    <Text style={styles.text}>Best Streak: {best}</Text>
+                    <Text style={styles.text}>Type: {habit?.type === "task" ? "Task" : "Habit"}</Text>
+                    <Text style={styles.text}>
+                        {habit?.type === "task"
+                            ? `Completed: ${habit?.currentStreak ? "Yes" : "No"}`
+                            : `Logged Today: ${habit?.isLoggedToday ? "Yes" : "No"}`}
+                    </Text>
+                    {habit?.type === "task" ? null : (
+                        <>
+                            <Text style={styles.text}>Current Streak: {current}</Text>
+                            <Text style={styles.text}>Best Streak: {best}</Text>
+                        </>
+                    )}
                 </View>
                 {habit?.rewards && habit.rewards.length > 0 && (
                     <View style={styles.rewardSection}>
@@ -57,12 +69,14 @@ export default function HabitScreen() {
                                 <Text style={styles.rewardMeta}>Type: {reward.type}</Text>
                                 <Text style={styles.rewardMeta}>Quantity: {reward.quantity}</Text>
                                 <Text style={styles.rewardMeta}>Need {
-                                    reward.type === 'one-time' ?
-                                        <Text style={styles.highlightText}>{Math.max(reward.requirements - current)}</Text> :
-                                        <Text style={styles.highlightText}>{
-                                            current === 0 ? reward.requirements : Math.max(reward.requirements - current%reward.requirements)
-                                        }</Text>
-                                } log(s) to receive reward</Text>
+                                    habit?.type === "task"
+                                        ? <Text style={styles.highlightText}>{Math.max(1 - (habit.currentStreak || 0), 0)}</Text>
+                                        : reward.type === 'one-time'
+                                            ? <Text style={styles.highlightText}>{Math.max(reward.requirements - current)}</Text>
+                                            : <Text style={styles.highlightText}>{
+                                                current === 0 ? reward.requirements : Math.max(reward.requirements - current%reward.requirements)
+                                            }</Text>
+                                } {habit?.type === "task" ? "completion(s)" : "log(s)"} to receive reward</Text>
                             </View>
                         ))}
                     </View>
