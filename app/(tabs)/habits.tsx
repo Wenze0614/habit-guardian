@@ -1,7 +1,7 @@
 import { Colors, Radii, Shadows, Spacing } from "@/constants/theme";
-import { clearHabitLogForDate, clearHabitLogs, listHabitLogsForHabits, upsertHabitLog } from "@/db/habitLogs";
+import { clearHabitLogForDate, clearHabitLogs, listHabitLogs, listHabitLogsForHabits, upsertHabitLog } from "@/db/habitLogs";
 import { addRewardLog, clearRewardLogForDate, clearRewardLogsForHabit } from "@/db/rewardLogs";
-import { disableReward, listRewardsForHabits, RewardRow } from "@/db/rewards";
+import { calcRewardProgress, disableReward, listRewardsForHabits, RewardRow } from "@/db/rewards";
 import { calcStreaksForHabit } from "@/hooks/useStreak";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -70,6 +70,8 @@ export default function HabitsScreen() {
                 description: r.description,
                 habit_id: r.habit_id,
                 enabled: r.enabled === 1 ? 1 : 0,
+                created_at: r.created_at,
+                valid_from: r.valid_from,
             });
         }
 
@@ -127,15 +129,16 @@ export default function HabitsScreen() {
                 const newBestStreak = h.type === "task" ? progress : Math.max(progress, h.bestStreak);
 
                 h.rewards?.forEach(r => {
+                    const rewardProgress = calcRewardProgress(listHabitLogs(h.id), r, h.type, now.toISOString().split('T')[0]);
                     if (h.type === "task" && r.type === "recurring") {
                         return;
                     }
-                    if (r.requirements <= 0 || progress < r.requirements) {
-                        console.log(`Progress ${progress} has not met reward requirement ${r.requirements} for reward ${r.name}`);
+                    if (r.requirements <= 0 || rewardProgress < r.requirements) {
+                        console.log(`Progress ${rewardProgress} has not met reward requirement ${r.requirements} for reward ${r.name}`);
                         return; // not eligible for this reward yet
                     }
-                    if (r.type === "recurring" && progress % r.requirements !== 0) {
-                        console.log(`Progress ${progress} is not a recurring reward checkpoint for requirement ${r.requirements}`);
+                    if (r.type === "recurring" && rewardProgress % r.requirements !== 0) {
+                        console.log(`Progress ${rewardProgress} is not a recurring reward checkpoint for requirement ${r.requirements}`);
                         return;
                     }
                     switch (r.type) {

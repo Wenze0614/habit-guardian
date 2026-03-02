@@ -4,7 +4,7 @@ import * as SQLite from "expo-sqlite";
 export const db = SQLite.openDatabaseSync("habits_v_1.db");
 
 const SCHEMA_VERSION_KEY = "schema_version";
-const CURRENT_SCHEMA_VERSION = 3;
+const CURRENT_SCHEMA_VERSION = 4;
 
 export function getSchemaVersion(): number {
     const v = metaGet(SCHEMA_VERSION_KEY);
@@ -53,6 +53,7 @@ export function initDb() {
       description TEXT,
       requirements INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
+      valid_from TEXT NOT NULL,
       enabled INTEGER NOT NULL DEFAULT 1
     );
   `);
@@ -104,6 +105,9 @@ export function initDb() {
     if (schemaVersion > 0 && schemaVersion < 3) {
         migrateToV3();
     }
+    if (schemaVersion > 0 && schemaVersion < 4) {
+        migrateToV4();
+    }
 
     setSchemaVersion(CURRENT_SCHEMA_VERSION);
 }
@@ -154,6 +158,14 @@ function migrateToV3() {
     );
 }
 
+function migrateToV4() {
+    db.execSync(`ALTER TABLE rewards ADD COLUMN valid_from TEXT;`);
+    db.runSync(
+        `UPDATE rewards
+         SET valid_from = COALESCE(valid_from, created_at);`
+    );
+}
+
 // For testing purposes, drops all tables and recreates them with seed data
 export function resetDb() {
     db.execSync(`DROP TABLE IF EXISTS habits;`);
@@ -179,11 +191,11 @@ function seedDb() {
 
     // ---- REWARDS ----
     db.execSync(`
-      INSERT INTO rewards (id, name, habit_id, type, quantity, description, requirements, created_at) VALUES
-      ('r1', 'Buy New Shoes', 'h1', 'recurring', 1, 'Reward after 7 runs', 7, '${now}'),
-      ('r2', 'Movie Night', 'h2', 'recurring', 1, 'After 5 reading days', 5, '${now}'),
-      ('r3', 'Cheat Snack', 'h3', 'recurring', 1, 'Allowed after 3 sugar-free days', 3, '${now}'),
-      ('r4', 'Pokemon Card Credits', 'h4', 'recurring', 50, 'Reward after 10 days without pokemon purchase', 10, '${now}');
+      INSERT INTO rewards (id, name, habit_id, type, quantity, description, requirements, created_at, valid_from) VALUES
+      ('r1', 'Buy New Shoes', 'h1', 'recurring', 1, 'Reward after 7 runs', 7, '${now}', '${now}'),
+      ('r2', 'Movie Night', 'h2', 'recurring', 1, 'After 5 reading days', 5, '${now}', '${now}'),
+      ('r3', 'Cheat Snack', 'h3', 'recurring', 1, 'Allowed after 3 sugar-free days', 3, '${now}', '${now}'),
+      ('r4', 'Pokemon Card Credits', 'h4', 'recurring', 50, 'Reward after 10 days without pokemon purchase', 10, '${now}', '${now}');
     `);
 
     // ---- HABIT LOGS ----
