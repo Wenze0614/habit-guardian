@@ -5,10 +5,10 @@ import 'react-native-reanimated';
 
 import { initDb } from '@/db/db';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Colors, Radii, Spacing } from '@/constants/theme';
-import { StyleSheet, Text } from 'react-native';
+import { Animated, Easing, StyleSheet, Text } from 'react-native';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast, { BaseToast } from 'react-native-toast-message';
 
@@ -20,6 +20,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [isReady, setIsReady] = useState(false);
+  const orbPulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let isMounted = true;
@@ -50,6 +51,35 @@ export default function RootLayout() {
     };
   }, []);
 
+  useEffect(() => {
+    if (isReady) {
+      return;
+    }
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(orbPulse, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(orbPulse, {
+          toValue: 0,
+          duration: 400,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [isReady, orbPulse]);
+
   const toastConfig = {
     success: (props: any) => (
       <BaseToast
@@ -74,9 +104,27 @@ export default function RootLayout() {
   };
 
   if (!isReady) {
+    const orbScale = orbPulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 1.22],
+    });
+
+    const orbOpacity = orbPulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.75, 1],
+    });
+
     return (
       <GestureHandlerRootView style={styles.loadingContainer}>
-        {/* <View style={styles.loadingOrb} /> */}
+        <Animated.View
+          style={[
+            styles.loadingOrb,
+            {
+              opacity: orbOpacity,
+              transform: [{ scale: orbScale }],
+            },
+          ]}
+        />
         <Text style={styles.loadingTitle}>Habit & Reward</Text>
         <Text style={styles.loadingSubtitle}>Build momentum. Earn the stars.</Text>
       </GestureHandlerRootView>
