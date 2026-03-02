@@ -6,14 +6,14 @@ import { Animated, Pressable, StyleSheet, Text, TouchableOpacity, View } from "r
 import ReanimatedSwipeable, { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 
 type ActionInfo = {
-    type: "log" | "cancel" | "delete";
+    type: "log" | "cancel" | "delete" | "archive";
     onPress: (id: string) => void;
     textLabel: string;
 
 }
 
 type ListItemProps = {
-    rightActionInfo: ActionInfo;
+    rightActionInfo: ActionInfo[];
     leftActionInfo: ActionInfo;
     children: React.ReactNode;
     item: Habit;
@@ -26,9 +26,15 @@ export const ListItem = ({ rightActionInfo, leftActionInfo, item, children }: Li
 
     const rightAction = () => {
         return <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => { rightActionInfo.onPress(item.id);}}>
-                <Text style={styles.buttonText}>{rightActionInfo.textLabel}</Text>
-            </TouchableOpacity>
+            {rightActionInfo.map((action) => (
+                <TouchableOpacity
+                    key={action.type}
+                    style={[styles.button, action.type === "archive" ? styles.archiveButton : styles.deleteButton]}
+                    onPress={() => { action.onPress(item.id); swipeRef.current?.close(); }}
+                >
+                    <Text style={action.type === "archive" ? styles.archiveButtonText : styles.buttonText}>{action.textLabel}</Text>
+                </TouchableOpacity>
+            ))}
         </View>
     }
 
@@ -144,6 +150,9 @@ const styles = StyleSheet.create({
     deleteButton: {
         backgroundColor: Colors.ui.danger,
     },
+    archiveButton: {
+        backgroundColor: Colors.grey[300],
+    },
     logButton: {
         backgroundColor: Colors.ui.success,
 
@@ -157,6 +166,10 @@ const styles = StyleSheet.create({
     buttonText: {
         color: Colors.ui.background,
         fontWeight: "700",
-    }
+    },
+    archiveButtonText: {
+        color: Colors.ui.textPrimary,
+        fontWeight: "700",
+    },
 }
 )

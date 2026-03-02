@@ -10,7 +10,7 @@ import { AppState, FlatList, Pressable, StyleSheet, Text, View } from "react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { ListItem } from "../../components/ui/ListItem";
-import { deleteHabit, HabitKind, listHabits } from "../../db/habits";
+import { archiveHabit, deleteHabit, HabitKind, listHabits } from "../../db/habits";
 
 
 export type Habit = {
@@ -107,16 +107,21 @@ export default function HabitsScreen() {
         setHabits((prev) => prev.filter(h => h.id !== habitId));
     }, [])
 
+    const archiveHabitAction = useCallback((habitId: string) => {
+        archiveHabit(habitId, true);
+        setHabits((prev) => prev.filter(h => h.id !== habitId));
+    }, [])
+
     const logHabitAction = useCallback(async (habitId: string) => {
         const now = new Date();
         console.log(`Logging habit ${habitId} `);
         upsertHabitLog({ habitId, date: now.toISOString().split('T')[0], status: true, note: "" });
         console.log(habits)
         setHabits((prev) => {
-            return prev.map(h => {
-                if (h.id !== habitId) return h; // not the one we're logging
+            return prev.flatMap(h => {
+                if (h.id !== habitId) return [h]; // not the one we're logging
                 if (h.type === "task" && h.isComplete) {
-                    return h;
+                    return [h];
                 }
                 const progress = h.type === "task" ? 1 : h.currentStreak + 1;
                 const newBestStreak = h.type === "task" ? progress : Math.max(progress, h.bestStreak);
@@ -161,15 +166,19 @@ export default function HabitsScreen() {
                             break;
                     }
                 })
-                return {
+                if (h.type === "task") {
+                    archiveHabit(h.id, true);
+                    return [];
+                }
+                return [{
                     ...h,
                     isLoggedToday: true,
-                    isComplete: h.type === "task" ? true : h.isComplete,
-                    completionDate: h.type === "task" ? now.toISOString().split('T')[0] : h.completionDate,
+                    isComplete: h.isComplete,
+                    completionDate: h.completionDate,
                     currentStreak: progress,
                     bestStreak: newBestStreak
-                }
-            })
+                }];
+            });
         });
         await Haptics.notificationAsync(
             Haptics.NotificationFeedbackType.Success
@@ -227,12 +236,15 @@ export default function HabitsScreen() {
         // </ReanimatedSwipeable >)
         return (
             <ListItem
-                rightActionInfo={{ type: 'delete', onPress: deleteHabitAction, textLabel: "Delete" }}
+                rightActionInfo={[
+                    { type: 'archive', onPress: archiveHabitAction, textLabel: "Archive" },
+                    { type: 'delete', onPress: deleteHabitAction, textLabel: "Delete" },
+                ]}
                 leftActionInfo={{
-                    type: isTaskActionDone ? 'cancel' : 'log',
-                    onPress: isTaskActionDone ? cancelLogHabitAction : logHabitAction,
+                    type: item.type === "task" ? 'log' : (isTaskActionDone ? 'cancel' : 'log'),
+                    onPress: item.type === "task" ? logHabitAction : (isTaskActionDone ? cancelLogHabitAction : logHabitAction),
                     textLabel: item.type === "task"
-                        ? (isTaskActionDone ? "Reopen" : "Done")
+                        ? "Done"
                         : (isTaskActionDone ? "Cancel" : "Log")
 
                 }} item={item}>
