@@ -14,6 +14,7 @@ import { randomUUID } from "expo-crypto";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import Toast from "react-native-toast-message";
 import ModalScreen from "../components/ui/modal";
 import { Habit } from "./(tabs)/habits";
 
@@ -21,6 +22,7 @@ export default function HabitScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [habit, setHabit] = useState<Habit>();
     const [rewardDrafts, setRewardDrafts] = useState<RewardRow[]>([]);
+    const [savedRewardsById, setSavedRewardsById] = useState<Record<string, RewardRow>>({});
     const [logs, setLogs] = useState<HabitLogRow[]>([]);
     const { current, best } = useStreak(id);
 
@@ -39,6 +41,9 @@ export default function HabitScreen() {
 
         setLogs(allLogs);
         setRewardDrafts(rewards);
+        setSavedRewardsById(
+            Object.fromEntries(rewards.map((reward) => [reward.id, reward]))
+        );
         setHabit({
             id: habitRow?.id ?? "",
             name: habitRow?.name ?? "",
@@ -74,6 +79,25 @@ export default function HabitScreen() {
         ]);
     };
 
+    const hasRewardChanged = (reward: RewardRow) => {
+        if (!reward.created_at) {
+            return true;
+        }
+
+        const savedReward = savedRewardsById[reward.id];
+        if (!savedReward) {
+            return true;
+        }
+
+        return (
+            reward.name.trim() !== savedReward.name.trim() ||
+            (reward.description ?? "") !== (savedReward.description ?? "") ||
+            reward.requirements !== savedReward.requirements ||
+            reward.quantity !== savedReward.quantity ||
+            reward.type !== savedReward.type
+        );
+    };
+
     const saveReward = (reward: RewardRow) => {
         if (!habit) return;
         const name = reward.name.trim();
@@ -98,6 +122,13 @@ export default function HabitScreen() {
         }
 
         load();
+        Toast.show({
+            type: "success",
+            text1: "Reward saved",
+            text2: "Your reward changes are now active.",
+            position: "bottom",
+            bottomOffset: 60,
+        });
     };
 
     const removeRewardAction = (rewardId: string) => {
@@ -148,6 +179,7 @@ export default function HabitScreen() {
                         rewardDrafts.map((reward) => {
                             const rewardProgress = calcRewardProgress(logs, reward, habit?.type ?? "habit", today);
                             const remaining = Math.max(reward.requirements - rewardProgress, 0);
+                            const canSave = hasRewardChanged(reward);
 
                             return (
                                 <View key={reward.id} style={styles.rewardCard}>
@@ -225,8 +257,12 @@ export default function HabitScreen() {
                                         <Pressable onPress={() => removeRewardAction(reward.id)} style={styles.removeButton}>
                                             <Text style={styles.removeButtonText}>Remove</Text>
                                         </Pressable>
-                                        <Pressable onPress={() => saveReward(reward)} style={styles.saveButton}>
-                                            <Text style={styles.saveButtonText}>Save</Text>
+                                        <Pressable
+                                            onPress={() => saveReward(reward)}
+                                            disabled={!canSave}
+                                            style={[styles.saveButton, !canSave ? styles.saveButtonDisabled : null]}
+                                        >
+                                            <Text style={[styles.saveButtonText, !canSave ? styles.saveButtonTextDisabled : null]}>Save</Text>
                                         </Pressable>
                                     </View>
                                 </View>
@@ -377,8 +413,16 @@ const styles = StyleSheet.create({
         borderRadius: Radii.md,
         backgroundColor: Colors.ui.accent,
     },
+    saveButtonDisabled: {
+        backgroundColor: Colors.ui.surface,
+        borderWidth: 1,
+        borderColor: Colors.ui.border,
+    },
     saveButtonText: {
         color: Colors.ui.background,
         fontWeight: "700",
+    },
+    saveButtonTextDisabled: {
+        color: Colors.ui.textMuted,
     },
 });
